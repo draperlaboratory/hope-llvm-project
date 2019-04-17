@@ -200,7 +200,7 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
 
   o << "bool " << Target.getName() + "AsmPrinter" << "::\n"
     << "emitPseudoExpansionLowering(MCStreamer &OutStreamer,\n"
-    << "                            const MachineInstr *MI) {\n";
+    << "                            const MachineInstr *MI){\n";
 
   if (!Expansions.empty()) {
     o << "  switch (MI->getOpcode()) {\n"

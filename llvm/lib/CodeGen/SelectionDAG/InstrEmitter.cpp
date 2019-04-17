@@ -861,6 +861,24 @@ EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
 
   // Create the new machine instruction.
   MachineInstrBuilder MIB = BuildMI(*MF, Node->getDebugLoc(), II);
+  
+  //SSITH TODO - Tag the new instruction
+  if(isa<StoreSDNode>(Node))
+    errs() << "storesdnode in instremitter\n";
+
+  SDNodeFlags Flags = Node->getFlags();
+  if(Flags.hasFPtrCreate()){
+    MIB.getInstr()->setFlag(MachineInstr::FPtrCreate);
+  }
+  else if(Flags.hasFPtrStore()){
+    MIB.getInstr()->setFlag(MachineInstr::FPtrStore);
+    //errs() << "fptr store in instremitter\n";
+    //Node->dump();
+    //errs() << Node << "\n";
+    //if(Node->isMachineOpcode())
+    //  errs() << "has machine opcode\n";
+    //errs() << "--------------\n";
+  }
 
   // Add result register values for things that are defined by this
   // instruction.
@@ -925,6 +943,11 @@ EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
   // happen before any custom inserter hook is called so that the
   // hook knows where in the block to insert the replacement code.
   MBB->insert(InsertPos, MIB);
+  
+  //SSITH - MBB insert seems to do a fair amount to the MI
+  //MIB.getInstr()->dump();
+  //errs() << "\n";
+  //errs() << "\n";
 
   // The MachineInstr may also define physregs instead of virtregs.  These
   // physreg values can reach other instructions in different ways:

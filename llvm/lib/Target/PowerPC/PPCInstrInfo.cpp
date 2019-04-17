@@ -1230,7 +1230,8 @@ void PPCInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                        unsigned SrcReg, bool isKill,
                                        int FrameIdx,
                                        const TargetRegisterClass *RC,
-                                       const TargetRegisterInfo *TRI) const {
+                                       const TargetRegisterInfo *TRI,
+                                       unsigned flags) const {
   MachineFunction &MF = *MBB.getParent();
   SmallVector<MachineInstr *, 4> NewMIs;
 
@@ -1282,7 +1283,8 @@ PPCInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                    MachineBasicBlock::iterator MI,
                                    unsigned DestReg, int FrameIdx,
                                    const TargetRegisterClass *RC,
-                                   const TargetRegisterInfo *TRI) const {
+                                   const TargetRegisterInfo *TRI,
+                                   unsigned flags) const {
   MachineFunction &MF = *MBB.getParent();
   SmallVector<MachineInstr*, 4> NewMIs;
   DebugLoc DL;

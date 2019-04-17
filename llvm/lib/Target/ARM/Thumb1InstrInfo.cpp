@@ -78,7 +78,8 @@ void Thumb1InstrInfo::
 storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                     unsigned SrcReg, bool isKill, int FI,
                     const TargetRegisterClass *RC,
-                    const TargetRegisterInfo *TRI) const {
+                    const TargetRegisterInfo *TRI,
+                    unsigned flags) const {
   assert((RC == &ARM::tGPRRegClass ||
           (TargetRegisterInfo::isPhysicalRegister(SrcReg) &&
            isARMLowRegister(SrcReg))) && "Unknown regclass!");
@@ -107,7 +108,8 @@ void Thumb1InstrInfo::
 loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                      unsigned DestReg, int FI,
                      const TargetRegisterClass *RC,
-                     const TargetRegisterInfo *TRI) const {
+                     const TargetRegisterInfo *TRI,
+                     unsigned flags) const {
   assert((RC->hasSuperClassEq(&ARM::tGPRRegClass) ||
           (TargetRegisterInfo::isPhysicalRegister(DestReg) &&
            isARMLowRegister(DestReg))) && "Unknown regclass!");

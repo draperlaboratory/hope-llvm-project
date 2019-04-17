@@ -583,6 +583,14 @@ public:
                             uint64_t Size = 0, unsigned ByteAlignment = 0,
                             SMLoc Loc = SMLoc()) = 0;
 
+  /// SSITH metadata write - only defined by MCELFStreamer
+  virtual void EmitSSITHMetadataHeader(const MCSubtargetInfo &STI) {}
+  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                                      const MCSubtargetInfo &STI,
+                                      uint8_t MD_type, uint8_t tag) {}
+  virtual char *SSITHpopLastInstruction(int nbytes) { return nullptr; }
+  virtual void SSITHpushInstruction(char *inst, int nbytes) {}
+  
   /// Emit a thread local bss (.tbss) symbol.
   ///
   /// \param Section - The thread local common section.

@@ -82,7 +82,15 @@ private:
   bool isBundleLocked() const;
   void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &) override;
   void EmitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;
-
+  
+  //SSITH
+  void EmitSSITHMetadataHeader(const MCSubtargetInfo &STI) override;
+  void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                              const MCSubtargetInfo &STI,
+                              uint8_t MD_type, uint8_t tag) override;
+  char *SSITHpopLastInstruction(int nbytes) override;
+  void SSITHpushInstruction(char *inst, int nbytes) override;
+  
   void fixSymbolsInTLSFixups(const MCExpr *expr);
   void finalizeCGProfileEntry(const MCSymbolRefExpr *&S);
   void finalizeCGProfile();

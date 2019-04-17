@@ -1076,8 +1076,28 @@ void SelectionDAGBuilder::visit(const Instruction &I) {
     ++SDNodeOrder;
 
   CurInst = &I;
-
   visit(I.getOpcode(), I);
+
+  //SSITH
+  SDValue Root = getRoot();
+  const StoreInst *si = dyn_cast<StoreInst>(CurInst);
+  if(si){
+    Type *Ty = si->getValueOperand()->getType();
+    if (PointerType *PtrTy = dyn_cast<PointerType>(Ty)){
+      if(PtrTy->getElementType()->isFunctionTy()){
+        SDNodeFlags Flags = Root.getNode()->getFlags();
+        Flags.setFPtrStore(true);
+        Root.getNode()->setFlags(Flags);
+        //errs() << "fptr store\n";
+        //Root.getNode()->dump();
+      
+        //if(isa<StoreSDNode>(Root.getNode()))
+        //  errs() << "is a StoreSDNode\n";
+        //if(Root.getNode()->isMachineOpcode())
+        //  errs() << "has machine opcode\n";
+      }
+    }
+  }
 
   if (auto *FPMO = dyn_cast<FPMathOperator>(&I)) {
     // Propagate the fast-math-flags of this IR instruction to the DAG node that
@@ -1393,6 +1413,14 @@ SDValue SelectionDAGBuilder::getValue(const Value *V) {
   SDValue Val = getValueImpl(V);
   NodeMap[V] = Val;
   resolveDanglingDebugInfo(V, Val);
+
+  //SSITH
+  //PointerType *ptr_t = dyn_cast<PointerType>(V->getType());
+  //if(ptr_t && ptr_t->getElementType()->isFunctionTy()){
+  //  SDNodeFlags Flags = Val.getNode()->getFlags();
+  //  Flags.setFPtrStore(true);
+  //  Val.getNode()->setFlags(Flags);
+  //}
   return Val;
 }
 
@@ -4211,6 +4239,9 @@ void SelectionDAGBuilder::visitStore(const StoreInst &I) {
 
   SDValue StoreNode = DAG.getNode(ISD::TokenFactor, dl, MVT::Other,
                                   makeArrayRef(Chains.data(), ChainI));
+  
+  
+  
   DAG.setRoot(StoreNode);
 }
 

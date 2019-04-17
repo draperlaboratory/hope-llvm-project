@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/MC/MCELFStreamer.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
@@ -496,6 +497,88 @@ void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
 
   for (unsigned i = 0, e = F.getFixups().size(); i != e; ++i)
     fixSymbolsInTLSFixups(F.getFixups()[i].getValue());
+}
+
+//SSITH Addition
+void MCELFStreamer::EmitSSITHMetadataHeader(const MCSubtargetInfo &STI){
+  SmallString<256> Code;
+  raw_svector_ostream VecOS(Code);
+  MCDataFragment *DF;
+
+  //Emit the Metadata tag
+  uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
+  support::endian::write(VecOS, MD, support::little);
+
+  uint64_t Base = 0u;
+  support::endian::write(VecOS, Base, support::little);
+
+  DF = getOrCreateDataFragment();
+  DF->setHasInstructions(STI);
+  DF->getContents().append(Code.begin(), Code.end());
+}
+
+//SSITH Addition
+void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                                            const MCSubtargetInfo &STI,
+                                            uint8_t MD_type, uint8_t tag){
+  SmallString<256> Code;
+  raw_svector_ostream VecOS(Code);
+  MCDataFragment *DF;
+ 
+  //Emit the Metadata tag
+  assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
+  uint8_t MD = MD_type;
+  support::endian::write(VecOS, MD, support::little);
+
+  //Our placeholder 0 bytes for the relative address
+  uint32_t Bits = 0;
+  support::endian::write(VecOS, Bits, support::little);
+ 
+  if(MD_type == DMD_FUNCTION_RANGE)
+    support::endian::write(VecOS, Bits, support::little);
+  
+  //The metadata tag specifier
+  if(MD_type != DMD_FUNCTION_RANGE){
+    assert(tag && 
+        "[SSITH Error] Must have a non null tag for op types other than function range");
+    MD = tag;
+    support::endian::write(VecOS, MD, support::little);
+  }
+
+  DF = getOrCreateDataFragment(&STI);
+  // Add the fixup and data.
+  for(unsigned i = 0; i < Fixups.size(); i++){
+    //hack this to account for the prologue byte
+    Fixups[i].setOffset(Fixups[i].getOffset() + DF->getContents().size() + 1 + i*4);
+    DF->getFixups().push_back(Fixups[i]);
+  }
+  
+  DF->setHasInstructions(STI);
+  DF->getContents().append(Code.begin(), Code.end());
+}
+
+//SSITH Addition
+char *MCELFStreamer::SSITHpopLastInstruction(int nbytes){
+  char *buf = new char[4];
+  MCDataFragment *DF = dyn_cast<MCDataFragment>(getCurrentFragment());
+  assert(DF && "[ssith] bad fragment type\n");
+
+  SmallVectorImpl<char> &Contents = DF->getContents();
+  for(int i = 0; i < nbytes; i++)
+    buf[i] = Contents.pop_back_val();
+
+  return buf;
+}
+
+//SSITH Addition
+void MCELFStreamer::SSITHpushInstruction(char *inst, int nbytes){
+  MCDataFragment *DF = dyn_cast<MCDataFragment>(getCurrentFragment());
+  assert(DF && "[ssith] bad fragment type\n");
+ 
+  for(int i = nbytes - 1; i >= 0; i--)
+    DF->getContents().push_back(inst[i]);
+  
+  delete inst;
 }
 
 // A fragment can only have one Subtarget, and when bundling is enabled we

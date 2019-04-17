@@ -428,6 +428,7 @@ SDValue RISCVTargetLowering::lowerGlobalAddress(SDValue Op,
   SDLoc DL(Op);
   EVT Ty = Op.getValueType();
   GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
+  const GlobalValue *GV = N->getGlobal();
   int64_t Offset = N->getOffset();
   MVT XLenVT = Subtarget.getXLenVT();
 
@@ -443,6 +444,13 @@ SDValue RISCVTargetLowering::lowerGlobalAddress(SDValue Op,
   if (Offset != 0)
     return DAG.getNode(ISD::ADD, DL, Ty, Addr,
                        DAG.getConstant(Offset, DL, XLenVT));
+  //SSITH
+  PointerType *ptr_t = dyn_cast<PointerType>(GV->getType());
+  if(ptr_t && ptr_t->getElementType()->isFunctionTy()){
+    SDNodeFlags Flags = Addr.getNode()->getFlags();
+    Flags.setFPtrCreate(true);
+    Addr.getNode()->setFlags(Flags);
+  }
   return Addr;
 }
 

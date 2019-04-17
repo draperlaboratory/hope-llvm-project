@@ -513,7 +513,7 @@ void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
       MF.createMIExtraInfo(memoperands(), getPreInstrSymbol(), Symbol));
 }
 
-uint16_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
+uint32_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
   // For now, the just return the union of the flags. If the flags get more
   // complicated over time, we might need more logic here.
   return getFlags() | Other.getFlags();
@@ -1531,6 +1531,12 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "nsw ";
   if (getFlag(MachineInstr::IsExact))
     OS << "exact ";
+  if (getFlag(MachineInstr::FnProlog))
+    OS << "ssith-prolog ";
+  if (getFlag(MachineInstr::FnEpilog))
+    OS << "ssith-epilog ";
+  if (getFlag(MachineInstr::FPtrStore))
+    OS << "ssith-fptr-store ";
 
   // Print the opcode name.
   if (TII)

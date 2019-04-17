@@ -543,7 +543,7 @@ static void insertCSRSaves(MachineBasicBlock &SaveBlock,
       unsigned Reg = CS.getReg();
       const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(Reg);
       TII.storeRegToStackSlot(SaveBlock, I, Reg, true, CS.getFrameIdx(), RC,
-                              TRI);
+                              TRI, MachineInstr::FnProlog);
     }
   }
 }
@@ -564,7 +564,8 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
     for (const CalleeSavedInfo &CI : reverse(CSI)) {
       unsigned Reg = CI.getReg();
       const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(Reg);
-      TII.loadRegFromStackSlot(RestoreBlock, I, Reg, CI.getFrameIdx(), RC, TRI);
+      TII.loadRegFromStackSlot(RestoreBlock, I, Reg, CI.getFrameIdx(), RC, TRI,
+          MachineInstr::FnEpilog);
       assert(I != RestoreBlock.begin() &&
              "loadRegFromStackSlot didn't insert any code!");
       // Insert in reverse order.  loadRegFromStackSlot can insert

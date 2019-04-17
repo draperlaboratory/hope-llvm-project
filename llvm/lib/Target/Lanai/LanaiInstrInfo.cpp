@@ -50,7 +50,8 @@ void LanaiInstrInfo::storeRegToStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
     unsigned SourceRegister, bool IsKill, int FrameIndex,
     const TargetRegisterClass *RegisterClass,
-    const TargetRegisterInfo * /*RegisterInfo*/) const {
+    const TargetRegisterInfo * /*RegisterInfo*/,
+    unsigned flags) const {
   DebugLoc DL;
   if (Position != MBB.end()) {
     DL = Position->getDebugLoc();
@@ -70,7 +71,8 @@ void LanaiInstrInfo::loadRegFromStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
     unsigned DestinationRegister, int FrameIndex,
     const TargetRegisterClass *RegisterClass,
-    const TargetRegisterInfo * /*RegisterInfo*/) const {
+    const TargetRegisterInfo * /*RegisterInfo*/,
+    unsigned flags) const {
   DebugLoc DL;
   if (Position != MBB.end()) {
     DL = Position->getDebugLoc();

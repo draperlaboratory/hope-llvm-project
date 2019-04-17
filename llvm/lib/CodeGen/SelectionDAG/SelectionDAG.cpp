@@ -1367,13 +1367,15 @@ SDValue SelectionDAG::getGlobalAddress(const GlobalValue *GV, const SDLoc &DL,
   ID.AddInteger(Offset);
   ID.AddInteger(TargetFlags);
   void *IP = nullptr;
-  if (SDNode *E = FindNodeOrInsertPos(ID, DL, IP))
+  if (SDNode *E = FindNodeOrInsertPos(ID, DL, IP)){
     return SDValue(E, 0);
+  }
 
   auto *N = newSDNode<GlobalAddressSDNode>(
       Opc, DL.getIROrder(), DL.getDebugLoc(), GV, VT, Offset, TargetFlags);
   CSEMap.InsertNode(N, IP);
     InsertNode(N);
+  
   return SDValue(N, 0);
 }
 

@@ -873,7 +873,8 @@ void HexagonInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
 void HexagonInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
       MachineBasicBlock::iterator I, unsigned SrcReg, bool isKill, int FI,
-      const TargetRegisterClass *RC, const TargetRegisterInfo *TRI) const {
+      const TargetRegisterClass *RC, const TargetRegisterInfo *TRI,
+      unsigned flags) const {
   DebugLoc DL = MBB.findDebugLoc(I);
   MachineFunction &MF = *MBB.getParent();
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -939,7 +940,8 @@ void HexagonInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
 void HexagonInstrInfo::loadRegFromStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator I, unsigned DestReg,
     int FI, const TargetRegisterClass *RC,
-    const TargetRegisterInfo *TRI) const {
+    const TargetRegisterInfo *TRI,
+    unsigned flags) const {
   DebugLoc DL = MBB.findDebugLoc(I);
   MachineFunction &MF = *MBB.getParent();
   MachineFrameInfo &MFI = MF.getFrameInfo();

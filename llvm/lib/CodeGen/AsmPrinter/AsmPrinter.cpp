@@ -99,6 +99,7 @@
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/MC/MCValue.h"
 #include "llvm/MC/SectionKind.h"
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/Pass.h"
 #include "llvm/Remarks/Remark.h"
 #include "llvm/Support/Casting.h"
@@ -1034,19 +1035,52 @@ void AsmPrinter::EmitFunctionBody() {
       MLI = OwnedMLI.get();
     }
   }
+  //SSITH
+  MCContext &Context = getObjFileLowering().getContext();
+  MCSectionELF *ISP = Context.getELFSection(".dover_metadata", ELF::SHT_PROGBITS, 0);
+  
+  //Gen tag info needs this to happen first or it fails
+  if(!ISP->hasInstructions()){
+    OutStreamer->PushSection();
+    OutStreamer->SwitchSection(ISP);
+    OutStreamer->EmitSSITHMetadataHeader(getSubtargetInfo());
+    ISP->setHasInstructions(true);
+    OutStreamer->PopSection();
+  }
 
   // Print out code for the function.
   bool HasAnyRealCode = false;
   int NumInstsInFunction = 0;
+
+  //MF->dump();
+  //errs() << "\n\n";
+
   for (auto &MBB : *MF) {
     // Print a label for the basic block.
     EmitBasicBlockStart(MBB);
+   
+    //errs() << "-------------\n";
+    //SSITH
+    OutStreamer->PushSection();
+    OutStreamer->SwitchSection(ISP);
+    EmitSSITHMetadataInst(MBB.getSymbol(), getSubtargetInfo(), DMT_BRANCH_VALID_TGT);
+    OutStreamer->PopSection();
+   
+    //MBB.getSymbol()->dump();
+    //MBB.dump();
+    
     for (auto &MI : MBB) {
-      // Print the assembly for the instruction.
       if (!MI.isPosition() && !MI.isImplicitDef() && !MI.isKill() &&
           !MI.isDebugInstr()) {
         HasAnyRealCode = true;
         ++NumInstsInFunction;
+        //SSITH
+        if(NumInstsInFunction == 1){
+          OutStreamer->PushSection();
+          OutStreamer->SwitchSection(ISP);
+          EmitSSITHMetadataInst(CurrentFnSym, getSubtargetInfo(), DMT_CFI3L_VALID_TGT);
+          OutStreamer->PopSection();
+        }
       }
 
       // If there is a pre-instruction symbol, emit a label for it here.
@@ -1120,6 +1154,7 @@ void AsmPrinter::EmitFunctionBody() {
     EmitBasicBlockEnd(MBB);
   }
 
+
   EmittedInsts += NumInstsInFunction;
   MachineOptimizationRemarkAnalysis R(DEBUG_TYPE, "InstructionCount",
                                       MF->getFunction().getSubprogram(),
@@ -1170,6 +1205,13 @@ void AsmPrinter::EmitFunctionBody() {
     CurrentFnEnd = createTempSymbol("func_end");
     OutStreamer->EmitLabel(CurrentFnEnd);
   }
+
+  //SSITH -- add in function range tag
+  //NOTE - Now doing this in RISCVAsmPrinter when we find the return inst
+  //OutStreamer->PushSection();
+  //OutStreamer->SwitchSection(ISP);
+  //EmitSSITHMetadataFnRange(CurrentFnSym, CurrentFnEnd, getSubtargetInfo());
+  //OutStreamer->PopSection();
 
   // If the target wants a .size directive for the size of the function, emit
   // it.
@@ -2927,19 +2969,21 @@ void AsmPrinter::EmitBasicBlockStart(const MachineBasicBlock &MBB) const {
   }
 
   // Print the main label for the block.
-  if (MBB.pred_empty() ||
-      (isBlockOnlyReachableByFallthrough(&MBB) && !MBB.isEHFuncletEntry() &&
-       !MBB.hasLabelMustBeEmitted())) {
-    if (isVerbose()) {
-      // NOTE: Want this comment at start of line, don't emit with AddComment.
-      OutStreamer->emitRawComment(" %bb." + Twine(MBB.getNumber()) + ":",
-                                  false);
-    }
-  } else {
-    if (isVerbose() && MBB.hasLabelMustBeEmitted())
-      OutStreamer->AddComment("Label of block must be emitted");
-    OutStreamer->EmitLabel(MBB.getSymbol());
-  }
+  // if (MBB.pred_empty() ||
+  //     (isBlockOnlyReachableByFallthrough(&MBB) && !MBB.isEHFuncletEntry() &&
+  //      !MBB.hasLabelMustBeEmitted())) {
+  //   if (isVerbose()) {
+  //     // NOTE: Want this comment at start of line, don't emit with AddComment.
+  //     OutStreamer->emitRawComment(" %bb." + Twine(MBB.getNumber()) + ":",
+  //                                 false);
+  //   }
+  // } else {
+  //   if (isVerbose() && MBB.hasLabelMustBeEmitted())
+  //     OutStreamer->AddComment("Label of block must be emitted");
+  //   OutStreamer->EmitLabel(MBB.getSymbol());
+  // }
+  //SSITH - Always label basic block
+  OutStreamer->EmitLabel(MBB.getSymbol());
 }
 
 void AsmPrinter::EmitBasicBlockEnd(const MachineBasicBlock &MBB) {
