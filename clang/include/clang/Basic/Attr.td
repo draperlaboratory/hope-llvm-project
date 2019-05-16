@@ -3237,3 +3237,10 @@ def ObjCExternallyRetained : InheritableAttr {
   let Subjects = SubjectList<[NonParmVar, Function, Block, ObjCMethod]>;
   let Documentation = [ObjCExternallyRetainedDocs];
 }
+
+def ISPWriteOnce : InheritableAttr {
+    let Spellings = [CXX11<"isp", "write_once", 201905>,
+                     C2x<"isp", "write_once">];
+    let Subjects = SubjectList<[Var], ErrorDiag>;
+    let Documentation = [ISP_WriteOnceDocs];
+}

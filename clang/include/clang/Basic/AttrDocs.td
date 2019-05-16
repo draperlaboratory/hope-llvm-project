@@ -4105,3 +4105,13 @@ This attribute does not affect optimizations in any way, unlike GCC's
 ``__attribute__((malloc))``.
 }];
 }
+
+def ISP_WriteOnceDocs : Documentation {
+    let Category = DocCatVariable;
+    let Content = [{
+IPS's ``write_once`` attribute can be applied to a variable. It implies that
+final ELF file should note that the memory allocated for the variable should
+only be written once. Anyone using this attribute on a global variable should
+take care since these variables are usually zero'd by the standard bootstrap
+code... which is probably not the single write that you had in mind.}];
+}
