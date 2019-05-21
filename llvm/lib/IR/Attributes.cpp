@@ -352,7 +352,9 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
     return "cold";
   if (hasAttribute(Attribute::ImmArg))
     return "immarg";
-
+  if (hasAttribute(Attribute::ISPWriteOnce))
+    return "isp::write_once";
+  
   // FIXME: These should be output like this:
   //
   //   align=4

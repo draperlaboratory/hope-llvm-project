@@ -454,6 +454,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
     return;
 
   if (GV->hasInitializer()) {
+
     // Check to see if this is a special global used by LLVM, if so, emit it.
     if (EmitSpecialLLVMGlobal(GV))
       return;
@@ -464,6 +465,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
       return;
 
     if (isVerbose()) {
+
       // When printing the control variable __emutls_v.*,
       // we don't need to print the original TLS variable name.
       GV->printAsOperand(OutStreamer->GetCommentOS(),
@@ -475,11 +477,18 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   MCSymbol *GVSym = getSymbol(GV);
   MCSymbol *EmittedSym = GVSym;
 
+  if ( GV->hasAttribute(llvm::Attribute::ISPWriteOnce) ) {
+    if ( GVSym->isELF() )
+      cast<MCSymbolELF>(GVSym)->setISPWriteOnce();
+    else
+      printf("TODO ACTUAL LLVM WARNING\n"); // TODO
+  }
+  
   // getOrCreateEmuTLSControlSym only creates the symbol with name and default
   // attributes.
   // GV's or GVSym's attributes will be used for the EmittedSym.
   EmitVisibility(EmittedSym, GV->getVisibility(), !GV->isDeclaration());
-
+  
   if (!GV->hasInitializer())   // External globals require no extra code.
     return;
 
@@ -490,7 +499,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   if (MAI->hasDotTypeDotSizeDirective())
     OutStreamer->EmitSymbolAttribute(EmittedSym, MCSA_ELF_TypeObject);
-
+  
   SectionKind GVKind = TargetLoweringObjectFile::getKindForGlobal(GV, TM);
 
   const DataLayout &DL = GV->getParent()->getDataLayout();
@@ -510,6 +519,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   // Handle common symbols
   if (GVKind.isCommon()) {
+
     if (Size == 0) Size = 1;   // .comm Foo, 0 is undefined, avoid it.
     unsigned Align = 1 << AlignLog;
     if (!getObjFileLowering().getCommDirectiveSupportsAlignment())
@@ -527,6 +537,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   // zerofill directive, do so here.
   if (GVKind.isBSS() && MAI->hasMachoZeroFillDirective() &&
       TheSection->isVirtualSection()) {
+
     if (Size == 0)
       Size = 1; // zerofill of 0 bytes is undefined.
     unsigned Align = 1 << AlignLog;
@@ -540,6 +551,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   // section use .lcomm/.comm directive.
   if (GVKind.isBSSLocal() &&
       getObjFileLowering().getBSSSection() == TheSection) {
+
     if (Size == 0)
       Size = 1; // .comm Foo, 0 is undefined, avoid it.
     unsigned Align = 1 << AlignLog;

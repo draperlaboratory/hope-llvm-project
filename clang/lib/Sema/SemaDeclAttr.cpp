@@ -2829,12 +2829,6 @@ static void handleSentinelAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
                           AL.getAttributeSpellingListIndex()));
 }
 
-static void handleISPWriteOnce(Sema &S, Decl *D, const ParsedAttr &AL) {
-
-  printf("handling isp write_once attribute\n");
-  
-}
-
 static void handleWarnUnusedResult(Sema &S, Decl *D, const ParsedAttr &AL) {
   if (D->getFunctionType() &&
       D->getFunctionType()->getReturnType()->isVoidType()) {
@@ -7307,7 +7301,7 @@ static void ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D,
     break;
 
   case ParsedAttr::AT_ISPWriteOnce:
-    handleISPWriteOnce(S, D, AL);
+    handleSimpleAttribute<ISPWriteOnceAttr>(S, D, AL);
     break;
   }
 }

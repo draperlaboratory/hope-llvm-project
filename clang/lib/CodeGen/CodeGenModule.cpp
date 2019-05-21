@@ -3100,7 +3100,7 @@ CodeGenModule::GetOrCreateLLVMGlobal(StringRef MangledName,
     if (!IsForDefinition)
       return llvm::ConstantExpr::getBitCast(Entry, Ty);
   }
-
+  
   auto AddrSpace = GetGlobalVarAddressSpace(D);
   auto TargetAddrSpace = getContext().getTargetAddressSpace(AddrSpace);
 
@@ -3229,6 +3229,11 @@ CodeGenModule::GetOrCreateLLVMGlobal(StringRef MangledName,
   if (GV->isDeclaration())
     getTargetCodeGenInfo().setTargetAttributes(D, GV, *this);
 
+  // pass ISP attributes through
+  if ( D->hasAttr<ISPWriteOnceAttr>() ) {
+    GV->addAttribute(llvm::Attribute::ISPWriteOnce);
+  }
+    
   return GV;
 }
 

@@ -431,6 +431,10 @@ void CodeGenFunction::EmitStaticVarDecl(const VarDecl &D,
   if (D.hasAttr<UsedAttr>())
     CGM.addUsedGlobal(var);
 
+  // pass ISP attributes along   
+  if ( D.getAttr<ISPWriteOnceAttr>() )
+    var->addAttribute(llvm::Attribute::ISPWriteOnce);
+
   // We may have to cast the constant because of the initializer
   // mismatch above.
   //

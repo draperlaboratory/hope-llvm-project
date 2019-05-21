@@ -34,10 +34,14 @@ enum {
   ELF_WeakrefUsedInReloc_Shift = 11,
 
   // One bit.
-  ELF_BindingSet_Shift = 12
+  ELF_BindingSet_Shift = 12,
+
+  // ISP metadata flags
+  // one bit
+  ELF_ISP_Write_Once_Shift = 13
 };
 }
-
+  
 void MCSymbolELF::setBinding(unsigned Binding) const {
   setIsBindingSet();
   if (getType() == ELF::STT_SECTION && Binding != ELF::STB_LOCAL)
@@ -194,8 +198,17 @@ void MCSymbolELF::setIsBindingSet() const {
   uint32_t OtherFlags = getFlags() & ~(0x1 << ELF_BindingSet_Shift);
   setFlags(OtherFlags | (1 << ELF_BindingSet_Shift));
 }
-
+  
 bool MCSymbolELF::isBindingSet() const {
   return getFlags() & (0x1 << ELF_BindingSet_Shift);
 }
+
+void MCSymbolELF::setISPWriteOnce() const {
+  uint32_t OtherFlags = getFlags() & ~(0x1 << ELF_ISP_Write_Once_Shift);
+  setFlags(OtherFlags | (1 << ELF_ISP_Write_Once_Shift));
+}
+
+bool MCSymbolELF::isISPWriteOnce() const {
+  return getFlags() & (0x1 << ELF_ISP_Write_Once_Shift);
+}  
 }

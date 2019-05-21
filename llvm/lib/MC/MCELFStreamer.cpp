@@ -288,6 +288,9 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
+  if ( Symbol->isISPWriteOnce() )
+    printf("!!! Have common symbol with ISPWriteOnce!\n");
+  
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
     Symbol->setExternal(true);
@@ -517,6 +520,36 @@ void MCELFStreamer::EmitSSITHMetadataHeader(const MCSubtargetInfo &STI){
   DF->getContents().append(Code.begin(), Code.end());
 }
 
+// TODO: understand STI
+void MCELFStreamer::EmitSSITHMetadataForSymbol(MCSymbol *Sym, const MCSubtargetInfo &STI, ISPMetadata tag) {
+
+  MCSectionELF *ELF_MD_SEC = Context.getELFSection(ISP_METADATA_ELF_SECTION_NAME, ELF::SHT_PROGBITS, 0);
+
+  // save streamer state
+  PushSection();
+
+  // switch streamer to medata elf section
+  SwitchSection(ELF_MD_SEC);
+
+  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
+  MCContext &Ctx = OutContext;
+  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
+  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
+  ME = RISCVMCExpr::create(ME, Kind, Ctx);
+  
+  //Push fixup -- the linker will write the 4 byte address for us
+  SmallVector<MCFixup, 4> Fixups;
+  Fixups.push_back(
+      MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+
+  // push the actual entry
+  EmitSSITHMetadataEntry(Fixups, STI, DMD_TAG_ADDRESS_OP, tag);
+  
+  //Restore the previous section
+  PopSection();
+
+}
+
 //SSITH Addition
 void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
                                             const MCSubtargetInfo &STI,
@@ -525,7 +558,7 @@ void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
  
-  //Emit the Metadata tag
+  // Emit the Metadata tag
   assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
   uint8_t MD = MD_type;
   support::endian::write(VecOS, MD, support::little);
