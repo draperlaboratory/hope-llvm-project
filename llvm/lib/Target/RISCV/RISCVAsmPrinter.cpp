@@ -152,10 +152,6 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   }
   OutStreamer->SSITHpushInstruction(tmp, 4);
 
-  //Get the new section
-  MCContext &Context = getObjFileLowering().getContext();
-  MCSectionELF *ISP = Context.getELFSection(".dover_metadata", ELF::SHT_PROGBITS, 0);
-  
   bool retTarget = false;
   bool branchFallThrough = false;
 
@@ -247,10 +243,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     //Emit the metadata 
     MCSymbol *CurPos = OutContext.createTempSymbol();
     OutStreamer->EmitLabel(CurPos);
-    OutStreamer->PushSection();
-    OutStreamer->SwitchSection(ISP);
     EmitSSITHMetadata(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
-    OutStreamer->PopSection();
 
     //Emit our new store
     MCInst SSITHStore;
