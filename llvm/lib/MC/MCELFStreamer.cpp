@@ -560,8 +560,7 @@ void MCELFStreamer::EmitSSITHMetadataDataEntry(MCFixup &Fixup,
 
 //SSITH Addition
 void MCELFStreamer::EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
-                                            const MCSubtargetInfo &STI,
-                                            uint8_t MD_type, uint8_t tag){
+					       uint8_t MD_type, uint8_t tag){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
@@ -586,15 +585,13 @@ void MCELFStreamer::EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
     support::endian::write(VecOS, MD, support::little);
   }
 
-  DF = getOrCreateDataFragment(&STI);
+  DF = getOrCreateDataFragment();
   // Add the fixup and data.
   for(unsigned i = 0; i < Fixups.size(); i++){
     //hack this to account for the prologue byte
     Fixups[i].setOffset(Fixups[i].getOffset() + DF->getContents().size() + 1 + i*4);
     DF->getFixups().push_back(Fixups[i]);
   }
-  
-  DF->setHasInstructions(STI);
   DF->getContents().append(Code.begin(), Code.end());
 }
 

@@ -66,9 +66,8 @@ public:
 
   //SSITH Addition
   void EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) override;
-  void EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo &STI, uint8_t tag) override;
-  void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end, 
-       const MCSubtargetInfo &STI) override;
+  void EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag) override;
+  void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end) override;
   
   // Wrapper needed for tblgenned pseudo lowering.
   bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp) const {
@@ -93,8 +92,7 @@ bool RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
 #include "RISCVGenMCPseudoLowering.inc"
 
 //SSITH
-void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end,
-    const MCSubtargetInfo &STI){
+void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end){
   
   SmallVector<MCFixup, 4> Fixups;
 
@@ -112,7 +110,7 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end,
   Fixups.push_back(
       MCFixup::create(0, MEend, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, STI, DMD_FUNCTION_RANGE, 0);
+  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
 void RISCVAsmPrinter::EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) {
@@ -141,8 +139,8 @@ void RISCVAsmPrinter::EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) 
 }
 
 //SSITH
-void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo &STI,
-                                            uint8_t tag){
+void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag){
+
   SmallVector<MCFixup, 4> Fixups;
 
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
@@ -155,7 +153,7 @@ void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo
   Fixups.push_back(
       MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, STI, DMD_TAG_ADDRESS_OP, tag);
+  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, DMD_TAG_ADDRESS_OP, tag);
 }
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
@@ -236,45 +234,45 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   OutStreamer->PushSection();
   OutStreamer->SwitchSection(ISP);
   if(MI->getFlag(MachineInstr::FnProlog))
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_STACK_PROLOGUE_AUTHORITY);
+    EmitSSITHMetadataInst(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
   else if(MI->getFlag(MachineInstr::FnEpilog)){
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadataInst(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
   }
   else if(MI->getFlag(MachineInstr::FPtrStore)){
     //MI->dump();
     //errs() << "store\n--------------------\n";
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_FPTR_STORE_AUTHORITY);
+    EmitSSITHMetadataInst(InstSym, DMT_FPTR_STORE_AUTHORITY);
   }
   else if(MI->getFlag(MachineInstr::FPtrCreate)){
     //MI->dump();
     //errs() << "create\n--------------------\n";
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_FPTR_CREATE_AUTHORITY);
+    EmitSSITHMetadataInst(InstSym, DMT_FPTR_CREATE_AUTHORITY);
   }
   //return instructions aren't tagged epilog for whatever reason
   else if(MI->isReturn() && !MI->isCall()){
     //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_STACK_EPILOGUE_AUTHORITY);
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_RETURN_INSTR);
+    EmitSSITHMetadataInst(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadataInst(InstSym, DMT_RETURN_INSTR);
   }
   //Tag call instructions for 3 class CFI policy
   else if(MI->isCall())
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_CALL_INSTR);
+    EmitSSITHMetadataInst(InstSym, DMT_CALL_INSTR);
   //Tag branch instruction for 3 class CFI policy
   else if(MI->isBranch())
-    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_BRANCH_INSTR);
+    EmitSSITHMetadataInst(InstSym, DMT_BRANCH_INSTR);
  
   //whether its a tail call or a return (handled separately above) do this
   if(MI->isReturn())
-    EmitSSITHMetadataFnRange(CurrentFnSym, InstSym, getSubtargetInfo());
+    EmitSSITHMetadataFnRange(CurrentFnSym, InstSym);
 
   //Targets can also be other things, need a separate if check
   if(retTarget){
     MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadataInst(Tgt, getSubtargetInfo(), DMT_RET_VALID_TGT);
+    EmitSSITHMetadataInst(Tgt, DMT_RET_VALID_TGT);
   }
   else if(branchFallThrough){
     MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadataInst(Tgt, getSubtargetInfo(), DMT_BRANCH_VALID_TGT);
+    EmitSSITHMetadataInst(Tgt, DMT_BRANCH_VALID_TGT);
   }
   //Restore the previous section
   OutStreamer->PopSection();
@@ -286,7 +284,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     OutStreamer->EmitLabel(CurPos);
     OutStreamer->PushSection();
     OutStreamer->SwitchSection(ISP);
-    EmitSSITHMetadataInst(CurPos, getSubtargetInfo(), DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadataInst(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
     OutStreamer->PopSection();
 
     //Emit our new store

@@ -589,7 +589,6 @@ public:
   virtual void EmitSSITHMetadataDataEntry(MCFixup &Fixup,
 					  uint8_t MD_type, uint8_t tag){}
   virtual void EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
-                                      const MCSubtargetInfo &STI,
                                       uint8_t MD_type, uint8_t tag) {}
   virtual char *SSITHpopLastInstruction(int nbytes) { return nullptr; }
   virtual void SSITHpushInstruction(char *inst, int nbytes) {}

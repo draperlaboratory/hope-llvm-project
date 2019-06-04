@@ -1085,7 +1085,7 @@ void AsmPrinter::EmitFunctionBody() {
     //SSITH
     OutStreamer->PushSection();
     OutStreamer->SwitchSection(ISP);
-    EmitSSITHMetadataInst(MBB.getSymbol(), getSubtargetInfo(), DMT_BRANCH_VALID_TGT);
+    EmitSSITHMetadataInst(MBB.getSymbol(), DMT_BRANCH_VALID_TGT);
     OutStreamer->PopSection();
    
     //MBB.getSymbol()->dump();
@@ -1100,7 +1100,7 @@ void AsmPrinter::EmitFunctionBody() {
         if(NumInstsInFunction == 1){
           OutStreamer->PushSection();
           OutStreamer->SwitchSection(ISP);
-          EmitSSITHMetadataInst(CurrentFnSym, getSubtargetInfo(), DMT_CFI3L_VALID_TGT);
+          EmitSSITHMetadataInst(CurrentFnSym, DMT_CFI3L_VALID_TGT);
           OutStreamer->PopSection();
         }
       }
