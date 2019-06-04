@@ -15,6 +15,7 @@
 #ifndef LLVM_CODEGEN_ASMPRINTER_H
 #define LLVM_CODEGEN_ASMPRINTER_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -411,6 +412,7 @@ public:
   }
 
   //SSITH Placeholder, only used by RISCV currently
+  virtual void EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) {}
   virtual void EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo &STI,
                                      uint8_t tag){}
   virtual void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end,

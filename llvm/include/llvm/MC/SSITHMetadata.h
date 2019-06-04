@@ -27,6 +27,12 @@
 #ifndef METADATA_H
 #define METADATA_H
 
+#include <cstdint>
+
+typedef uint8_t ISPMetadataTag_t;
+
+#define ISP_METADATA_ELF_SECTION_NAME ".dover_metadata"
+
 /* New metadata format in images:
 
 The goal with this format is to establish a smaller encoding, and a somewhat more general purpose
@@ -149,4 +155,6 @@ on any given address.
 #define DMT_CALL_INSTR 8u
 #define DMT_BRANCH_INSTR 9u
 #define DMT_FPTR_CREATE_AUTHORITY 10u
+#define DMT_WRITE_ONCE 11u
+
 #endif

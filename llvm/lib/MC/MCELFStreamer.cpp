@@ -90,6 +90,11 @@ void MCELFStreamer::mergeFragment(MCDataFragment *DF,
 
 void MCELFStreamer::InitSections(bool NoExecStack) {
   MCContext &Ctx = getContext();
+
+  printf("initializing ISP metadata section header\n");
+  SwitchSection(Ctx.getObjectFileInfo()->getISPMetadataSection());
+  EmitSSITHMetadataHeader();
+  
   SwitchSection(Ctx.getObjectFileInfo()->getTextSection());
   EmitCodeAlignment(4);
 
@@ -190,6 +195,9 @@ static unsigned CombineSymbolTypes(unsigned T1, unsigned T2) {
 bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
   auto *Symbol = cast<MCSymbolELF>(S);
 
+  if ( Symbol->isISPWriteOnce() )
+    printf("   emitting symbol attribute\n");
+  
   // Adding a symbol attribute always introduces the symbol, note that an
   // important side effect of calling registerSymbol here is to register
   // the symbol with the assembler.
@@ -503,7 +511,7 @@ void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
 }
 
 //SSITH Addition
-void MCELFStreamer::EmitSSITHMetadataHeader(const MCSubtargetInfo &STI){
+void MCELFStreamer::EmitSSITHMetadataHeader(void){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
@@ -516,48 +524,48 @@ void MCELFStreamer::EmitSSITHMetadataHeader(const MCSubtargetInfo &STI){
   support::endian::write(VecOS, Base, support::little);
 
   DF = getOrCreateDataFragment();
-  DF->setHasInstructions(STI);
   DF->getContents().append(Code.begin(), Code.end());
 }
 
-// TODO: understand STI
-void MCELFStreamer::EmitSSITHMetadataForSymbol(MCSymbol *Sym, const MCSubtargetInfo &STI, ISPMetadata tag) {
+void MCELFStreamer::EmitSSITHMetadataDataEntry(MCFixup &Fixup,
+					       uint8_t MD_type, uint8_t tag){
+  SmallString<256> Code;
+  raw_svector_ostream VecOS(Code);
+  MCDataFragment *DF = getOrCreateDataFragment();
+ 
+  // Emit the Metadata tag
+  assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
+  uint8_t MD = MD_type;
+  support::endian::write(VecOS, MD, support::little);
 
-  MCSectionELF *ELF_MD_SEC = Context.getELFSection(ISP_METADATA_ELF_SECTION_NAME, ELF::SHT_PROGBITS, 0);
-
-  // save streamer state
-  PushSection();
-
-  // switch streamer to medata elf section
-  SwitchSection(ELF_MD_SEC);
-
-  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
-  MCContext &Ctx = OutContext;
-  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
-  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
-  ME = RISCVMCExpr::create(ME, Kind, Ctx);
+  //Our placeholder 0 bytes for the relative address
+  uint32_t Bits = 0;
+  support::endian::write(VecOS, Bits, support::little);
+ 
+  if(MD_type == DMD_FUNCTION_RANGE)
+    support::endian::write(VecOS, Bits, support::little);
   
-  //Push fixup -- the linker will write the 4 byte address for us
-  SmallVector<MCFixup, 4> Fixups;
-  Fixups.push_back(
-      MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+  //The metadata tag specifier
+  if(MD_type != DMD_FUNCTION_RANGE){
+    assert(tag && 
+        "[SSITH Error] Must have a non null tag for op types other than function range");
+    MD = tag;
+    support::endian::write(VecOS, MD, support::little);
+  }
 
-  // push the actual entry
-  EmitSSITHMetadataEntry(Fixups, STI, DMD_TAG_ADDRESS_OP, tag);
-  
-  //Restore the previous section
-  PopSection();
-
+  Fixup.setOffset(Fixup.getOffset() + DF->getContents().size() + 1);
+  DF->getFixups().push_back(Fixup);
+  DF->getContents().append(Code.begin(), Code.end());
 }
 
 //SSITH Addition
-void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+void MCELFStreamer::EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
                                             const MCSubtargetInfo &STI,
                                             uint8_t MD_type, uint8_t tag){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
- 
+
   // Emit the Metadata tag
   assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
   uint8_t MD = MD_type;

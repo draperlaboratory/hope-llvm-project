@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/MCObjectStreamer.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/MC/MCAsmBackend.h"
@@ -206,6 +207,18 @@ void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
     EmitIntValue(AbsValue, Size);
     return;
   }
+  
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+    const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+    const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+    if ( SymA && SymA->isISPWriteOnce() ) {
+      
+      //    EmitSSITHMetadataVar(SymA, NULL, DMT_WRITE_ONCE);
+      
+      printf("EmitValueImpl for isp writeonce var %s (debug info)\n", SymA->getName());
+    }
+  }
+
   DF->getFixups().push_back(
       MCFixup::create(DF->getContents().size(), Value,
                       MCFixup::getKindForSize(Size, false), Loc));
@@ -231,7 +244,7 @@ void MCObjectStreamer::EmitCFIEndProcImpl(MCDwarfFrameInfo &Frame) {
 
 void MCObjectStreamer::EmitLabel(MCSymbol *Symbol, SMLoc Loc) {
   MCStreamer::EmitLabel(Symbol, Loc);
-
+  
   getAssembler().registerSymbol(*Symbol);
 
   // If there is a current fragment, mark the symbol as pointing into it.
@@ -568,7 +581,13 @@ void MCObjectStreamer::EmitCodePaddingBasicBlockEnd(
 void MCObjectStreamer::EmitDTPRel32Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
-
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitDTPRel32Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(MCFixup::create(DF->getContents().size(),
                                             Value, FK_DTPRel_4));
   DF->getContents().resize(DF->getContents().size() + 4, 0);
@@ -579,6 +598,13 @@ void MCObjectStreamer::EmitDTPRel64Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
 
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitDTPRel64Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(MCFixup::create(DF->getContents().size(),
                                             Value, FK_DTPRel_8));
   DF->getContents().resize(DF->getContents().size() + 8, 0);
@@ -589,6 +615,13 @@ void MCObjectStreamer::EmitTPRel32Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
 
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitTPRel32Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(MCFixup::create(DF->getContents().size(),
                                             Value, FK_TPRel_4));
   DF->getContents().resize(DF->getContents().size() + 4, 0);
@@ -599,6 +632,13 @@ void MCObjectStreamer::EmitTPRel64Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
 
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitTPRel64Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(MCFixup::create(DF->getContents().size(),
                                             Value, FK_TPRel_8));
   DF->getContents().resize(DF->getContents().size() + 8, 0);
@@ -609,6 +649,13 @@ void MCObjectStreamer::EmitGPRel32Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
 
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitGPRel32Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(
       MCFixup::create(DF->getContents().size(), Value, FK_GPRel_4));
   DF->getContents().resize(DF->getContents().size() + 4, 0);
@@ -619,6 +666,13 @@ void MCObjectStreamer::EmitGPRel64Value(const MCExpr *Value) {
   MCDataFragment *DF = getOrCreateDataFragment();
   flushPendingLabels(DF, DF->getContents().size());
 
+  if ( Value->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Value);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitGPRel64Value for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   DF->getFixups().push_back(
       MCFixup::create(DF->getContents().size(), Value, FK_GPRel_4));
   DF->getContents().resize(DF->getContents().size() + 8, 0);
@@ -639,7 +693,14 @@ bool MCObjectStreamer::EmitRelocDirective(const MCExpr &Offset, StringRef Name,
 
   MCDataFragment *DF = getOrCreateDataFragment(&STI);
   flushPendingLabels(DF, DF->getContents().size());
-
+  
+  if ( Expr->getKind() == MCExpr::SymbolRef ) {
+  const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Expr);
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() ) {
+    printf("EmitRelocDirective for isp writeonce var %s\n", SymA->getName());
+  }
+  }
   int64_t OffsetValue;
   if (Offset.evaluateAsAbsolute(OffsetValue)) {
     if (OffsetValue < 0)

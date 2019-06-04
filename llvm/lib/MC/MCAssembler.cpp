@@ -740,13 +740,33 @@ MCAssembler::handleFixup(const MCAsmLayout &Layout, MCFragment &F,
       MCFixup FixupAdd = MCFixup::createAddFor(Fixup);
       MCValue TargetAdd =
           MCValue::get(Target.getSymA(), nullptr, Target.getConstant());
+
+      const MCSymbolRefExpr *RefA = TargetAdd.getSymA();
+      const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+      if ( SymA && SymA->isISPWriteOnce() ) {
+	printf("calling recordrelocation for isp writeonce var %s from targetadd in MCAssembler\n", SymA->getName());
+      }
+      
       getWriter().recordRelocation(*this, Layout, &F, FixupAdd, TargetAdd,
                                    FixedValue);
       MCFixup FixupSub = MCFixup::createSubFor(Fixup);
       MCValue TargetSub = MCValue::get(Target.getSymB());
+
+      const MCSymbolRefExpr *RefB = TargetSub.getSymA();
+      const auto *SymB = RefB ? cast<MCSymbolELF>(&RefB->getSymbol()) : nullptr;
+      if ( SymB && SymB->isISPWriteOnce() )
+	printf("calling recordrelocation for isp writeonce var %s from targetsub in MCAssembler\n", SymB->getName());
+
       getWriter().recordRelocation(*this, Layout, &F, FixupSub, TargetSub,
                                    FixedValue);
     } else {
+
+            const MCSymbolRefExpr *RefC = Target.getSymA();
+      const auto *SymC = RefC ? cast<MCSymbolELF>(&RefC->getSymbol()) : nullptr;
+      if ( SymC && SymC->isISPWriteOnce() ) {
+	printf("calling recordrelocation for isp writeonce var %s from else in MCAssembler\n", SymC->getName());
+      }
+
       getWriter().recordRelocation(*this, Layout, &F, Fixup, Target,
                                    FixedValue);
     }

@@ -17,6 +17,7 @@
 #include "llvm/MC/MCCodeView.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDwarf.h"
+#include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstPrinter.h"
@@ -351,6 +352,10 @@ void MCStreamer::AssignFragment(MCSymbol *Symbol, MCFragment *Fragment) {
 void MCStreamer::EmitLabel(MCSymbol *Symbol, SMLoc Loc) {
   Symbol->redefineIfPossible();
 
+  const auto *SymA = cast<MCSymbolELF>(Symbol);
+  if ( SymA->isISPWriteOnce() )
+      printf("running EmitLable common symbol with ISPWriteOnce!\n");
+  
   if (!Symbol->isUndefined() || Symbol->isVariable())
     return getContext().reportError(Loc, "invalid symbol redefinition");
 
@@ -359,6 +364,9 @@ void MCStreamer::EmitLabel(MCSymbol *Symbol, SMLoc Loc) {
   assert(!Symbol->getFragment() && "Unexpected fragment on symbol data!");
   assert(Symbol->isUndefined() && "Cannot define a symbol twice!");
 
+  if ( cast<MCSymbolELF>(Symbol)->isISPWriteOnce() )
+    printf("Seeing a symbol w ispwriteonce in MCStreamer::EmitLabel\n");
+  
   Symbol->setFragment(&getCurrentSectionOnly()->getDummyFragment());
 
   MCTargetStreamer *TS = getTargetStreamer();

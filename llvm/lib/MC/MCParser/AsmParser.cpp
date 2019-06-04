@@ -859,6 +859,9 @@ bool AsmParser::enabledGenDwarfForAssembly() {
 }
 
 bool AsmParser::Run(bool NoInitialTextSection, bool NoFinalize) {
+
+  printf("Running the asm parser somehow\n");
+  
   // Create the initial section, if requested.
   if (!NoInitialTextSection)
     Out.InitSections(false);

@@ -28,6 +28,8 @@
 #include "llvm/Support/EndianStream.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/MC/MCSymbolELF.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "mccodeemitter"
@@ -249,6 +251,7 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
   MCExpr::ExprKind Kind = Expr->getKind();
   RISCV::Fixups FixupKind = RISCV::fixup_riscv_invalid;
   bool RelaxCandidate = false;
+  
   if (Kind == MCExpr::Target) {
     const RISCVMCExpr *RVExpr = cast<RISCVMCExpr>(Expr);
 
@@ -318,6 +321,14 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
     }
   } else if (Kind == MCExpr::SymbolRef &&
              cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) {
+
+    
+    const MCSymbolRefExpr *RefA = cast<MCSymbolRefExpr>(Expr);
+    const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+    if ( SymA && SymA->isISPWriteOnce() )
+      printf("getImmOpValue for isp writeonce var %s\n", SymA->getName());
+    
+    
     if (Desc.getOpcode() == RISCV::JAL) {
       FixupKind = RISCV::fixup_riscv_jal;
     } else if (MIFrm == RISCVII::InstFormatB) {
@@ -328,11 +339,11 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
       FixupKind = RISCV::fixup_riscv_rvc_branch;
     }
   }
-
+  
   assert(FixupKind != RISCV::fixup_riscv_invalid && "Unhandled expression!");
-
+  
   Fixups.push_back(
-      MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
+		   MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
   ++MCNumFixups;
 
   // Ensure an R_RISCV_RELAX relocation will be emitted if linker relaxation is

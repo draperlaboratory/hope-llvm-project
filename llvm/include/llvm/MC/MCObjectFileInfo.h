@@ -162,6 +162,9 @@ protected:
   /// Remarks section.
   MCSection *RemarksSection;
 
+  // ISP Metadata Section
+  MCSection *ISPMetadataSection;
+  
   /// EH frame section.
   ///
   /// It is initialized on demand so it can be overwritten (with uniquing).
@@ -384,6 +387,10 @@ public:
     return EHFrameSection;
   }
 
+  MCSection *getISPMetadataSection() const {
+    return ISPMetadataSection;
+  }
+  
   enum Environment { IsMachO, IsELF, IsCOFF, IsWasm, IsXCOFF };
   Environment getObjectFileType() const { return Env; }
 

@@ -343,6 +343,11 @@ bool RISCVAsmBackend::shouldInsertFixupForCodeAlign(MCAssembler &Asm,
   uint64_t FixedValue = 0;
   MCValue NopBytes = MCValue::get(Count);
 
+  const MCSymbolRefExpr *RefA = NopBytes.getSymA();
+  const auto *SymA = RefA ? cast<MCSymbolELF>(&RefA->getSymbol()) : nullptr;
+  if ( SymA && SymA->isISPWriteOnce() )
+    printf("calling recordrelocation for isp writeonce var %s from riscvasmbackend\n", SymA->getName());
+  
   Asm.getWriter().recordRelocation(Asm, Layout, &AF, Fixup, NopBytes,
                                    FixedValue);
 

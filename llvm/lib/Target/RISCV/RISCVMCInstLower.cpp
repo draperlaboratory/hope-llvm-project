@@ -23,6 +23,8 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/MC/MCSymbolELF.h"
+
 using namespace llvm;
 
 static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
@@ -30,6 +32,12 @@ static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
   MCContext &Ctx = AP.OutContext;
   RISCVMCExpr::VariantKind Kind;
 
+  const auto &Symbol = cast<MCSymbolELF>(Sym);
+
+  if ( Symbol->isISPWriteOnce() ) {
+    printf("***** FOUND WRITEONCE ATTR on var %s IN lowersymboloperand\n", Symbol->getName());
+  }
+  
   switch (MO.getTargetFlags()) {
   default:
     llvm_unreachable("Unknown target flag on GV operand");

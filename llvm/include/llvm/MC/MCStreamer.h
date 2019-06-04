@@ -13,6 +13,7 @@
 #ifndef LLVM_MC_MCSTREAMER_H
 #define LLVM_MC_MCSTREAMER_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
@@ -584,8 +585,10 @@ public:
                             SMLoc Loc = SMLoc()) = 0;
 
   /// SSITH metadata write - only defined by MCELFStreamer
-  virtual void EmitSSITHMetadataHeader(const MCSubtargetInfo &STI) {}
-  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+  virtual void EmitSSITHMetadataHeader(void) {}
+  virtual void EmitSSITHMetadataDataEntry(MCFixup &Fixup,
+					  uint8_t MD_type, uint8_t tag){}
+  virtual void EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
                                       const MCSubtargetInfo &STI,
                                       uint8_t MD_type, uint8_t tag) {}
   virtual char *SSITHpopLastInstruction(int nbytes) { return nullptr; }

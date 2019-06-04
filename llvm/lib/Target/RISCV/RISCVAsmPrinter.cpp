@@ -65,6 +65,7 @@ public:
                                    const MachineInstr *MI);
 
   //SSITH Addition
+  void EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) override;
   void EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo &STI, uint8_t tag) override;
   void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end, 
        const MCSubtargetInfo &STI) override;
@@ -111,7 +112,32 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end,
   Fixups.push_back(
       MCFixup::create(0, MEend, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataEntry(Fixups, STI, DMD_FUNCTION_RANGE, 0);
+  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, STI, DMD_FUNCTION_RANGE, 0);
+}
+
+void RISCVAsmPrinter::EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) {
+
+  MCContext &Context = getObjFileLowering().getContext();
+  MCSectionELF *ISP = Context.getELFSection(ISP_METADATA_ELF_SECTION_NAME, ELF::SHT_PROGBITS, 0);
+
+  OutStreamer->PushSection();
+  OutStreamer->SwitchSection(ISP);
+  
+  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
+  MCContext &Ctx = OutContext;
+  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
+  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
+  ME = RISCVMCExpr::create(ME, Kind, Ctx);
+
+  printf("\nEmitting SSITH Metadata Variable!!\n");
+  printf("  name = %s\n\n", Sym->getName());
+  
+  MCFixup Fixup = MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr));
+
+  OutStreamer->EmitSSITHMetadataDataEntry(Fixup, DMD_TAG_ADDRESS_OP, tag);
+
+  //Restore the previous section
+  OutStreamer->PopSection();
 }
 
 //SSITH
@@ -129,7 +155,7 @@ void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, const MCSubtargetInfo
   Fixups.push_back(
       MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataEntry(Fixups, STI, DMD_TAG_ADDRESS_OP, tag);
+  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, STI, DMD_TAG_ADDRESS_OP, tag);
 }
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {

@@ -537,6 +537,13 @@ void ELFWriter::writeSymbol(SymbolTableWriter &Writer, uint32_t StringIndex,
   uint64_t Value = SymbolValue(*MSD.Symbol, Layout);
   uint64_t Size = 0;
 
+  if ( Symbol.isISPWriteOnce() ) {
+    printf("  writing ISPWriteOnce symbol!\n");
+    printf("    - Size = 0x%x\n", Size);
+    printf("    - Val  = 0x%x\n", Value);
+    printf("    - Info = 0x%x\n", Info);
+  }
+  
   const MCExpr *ESize = MSD.Symbol->getSize();
   if (!ESize && Base)
     ESize = Base->getSize();
@@ -638,6 +645,10 @@ void ELFWriter::computeSymbolTable(
   bool HasLargeSectionIndex = false;
   for (const MCSymbol &S : Asm.symbols()) {
     const auto &Symbol = cast<MCSymbolELF>(S);
+    
+    if ( Symbol.isISPWriteOnce() )
+      printf("* have  symbol with ISPWriteOnce in computeSymbolTable!\n");
+  
     bool Used = Symbol.isUsedInReloc();
     bool WeakrefUsed = Symbol.isWeakrefUsedInReloc();
     bool isSignature = Symbol.isSignature();
