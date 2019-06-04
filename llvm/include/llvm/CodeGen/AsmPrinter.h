@@ -412,8 +412,7 @@ public:
   }
 
   //SSITH Placeholder, only used by RISCV currently
-  virtual void EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) {}
-  virtual void EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag){}
+  virtual void EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {}
   virtual void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end) {}
 
   /// Return the symbol for the specified constant pool entry.

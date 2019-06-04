@@ -479,9 +479,8 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   if ( GV->hasAttribute(llvm::Attribute::ISPWriteOnce) ) {
     if ( GVSym->isELF() ) {
-      printf("generating MCSym for ISPWriteOnce global variable %s\n", GVSym->getName());
       cast<MCSymbolELF>(GVSym)->setISPWriteOnce();
-      EmitSSITHMetadataVar(GVSym, DMT_WRITE_ONCE);
+      EmitSSITHMetadata(GVSym, DMT_WRITE_ONCE);
     }
     else
       printf("TODO ACTUAL LLVM WARNING\n"); // TODO
@@ -522,9 +521,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   // Handle common symbols
   if (GVKind.isCommon()) {
-
-    printf("  handling common symbol\n");
-    
     if (Size == 0) Size = 1;   // .comm Foo, 0 is undefined, avoid it.
     unsigned Align = 1 << AlignLog;
     if (!getObjFileLowering().getCommDirectiveSupportsAlignment())
@@ -548,8 +544,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
     unsigned Align = 1 << AlignLog;
     EmitLinkage(GV, GVSym);
 
-    printf("  doing zerofill shit\n");
-    
     // .zerofill __DATA, __bss, _foo, 400, 5
     OutStreamer->EmitZerofill(TheSection, GVSym, Size, Align);
     return;
@@ -560,8 +554,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   if (GVKind.isBSSLocal() &&
       getObjFileLowering().getBSSSection() == TheSection) {
 
-    printf("  bss local\n");
-    
     if (Size == 0)
       Size = 1; // .comm Foo, 0 is undefined, avoid it.
     unsigned Align = 1 << AlignLog;
@@ -1057,18 +1049,6 @@ void AsmPrinter::EmitFunctionBody() {
       MLI = OwnedMLI.get();
     }
   }
-  //SSITH
-  MCContext &Context = getObjFileLowering().getContext();
-  MCSectionELF *ISP = cast<MCSectionELF>(Context.getObjectFileInfo()->getISPMetadataSection());
-  
-  //Gen tag info needs this to happen first or it fails
-  //  if(!ISP->hasInstructions()){
-  //    OutStreamer->PushSection();
-  //    OutStreamer->SwitchSection(ISP);
-  //    OutStreamer->EmitSSITHMetadataHeader(getSubtargetInfo());
-  //    ISP->setHasInstructions(true);
-  //    OutStreamer->PopSection();
-  //  }
 
   // Print out code for the function.
   bool HasAnyRealCode = false;
@@ -1081,12 +1061,8 @@ void AsmPrinter::EmitFunctionBody() {
     // Print a label for the basic block.
     EmitBasicBlockStart(MBB);
    
-    //errs() << "-------------\n";
     //SSITH
-    OutStreamer->PushSection();
-    OutStreamer->SwitchSection(ISP);
-    EmitSSITHMetadataInst(MBB.getSymbol(), DMT_BRANCH_VALID_TGT);
-    OutStreamer->PopSection();
+    EmitSSITHMetadata(MBB.getSymbol(), DMT_BRANCH_VALID_TGT);
    
     //MBB.getSymbol()->dump();
     //MBB.dump();
@@ -1098,10 +1074,7 @@ void AsmPrinter::EmitFunctionBody() {
         ++NumInstsInFunction;
         //SSITH
         if(NumInstsInFunction == 1){
-          OutStreamer->PushSection();
-          OutStreamer->SwitchSection(ISP);
-          EmitSSITHMetadataInst(CurrentFnSym, DMT_CFI3L_VALID_TGT);
-          OutStreamer->PopSection();
+          EmitSSITHMetadata(CurrentFnSym, DMT_CFI3L_VALID_TGT);
         }
       }
 

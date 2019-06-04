@@ -88,12 +88,28 @@ void MCELFStreamer::mergeFragment(MCDataFragment *DF,
   DF->getContents().append(EF->getContents().begin(), EF->getContents().end());
 }
 
+//SSITH Addition
+static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
+
+  SmallString<256> Code;
+  raw_svector_ostream VecOS(Code);
+
+  //Emit the Metadata tag
+  uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
+  support::endian::write(VecOS, MD, support::little);
+
+  uint64_t Base = 0u;
+  support::endian::write(VecOS, Base, support::little);
+
+  MCDataFragment *DF = Streamer->getOrCreateDataFragment();
+  DF->getContents().append(Code.begin(), Code.end());
+}
+
 void MCELFStreamer::InitSections(bool NoExecStack) {
   MCContext &Ctx = getContext();
 
-  printf("initializing ISP metadata section header\n");
   SwitchSection(Ctx.getObjectFileInfo()->getISPMetadataSection());
-  EmitSSITHMetadataHeader();
+  EmitSSITHMetadataHeader(this);
   
   SwitchSection(Ctx.getObjectFileInfo()->getTextSection());
   EmitCodeAlignment(4);
@@ -195,9 +211,6 @@ static unsigned CombineSymbolTypes(unsigned T1, unsigned T2) {
 bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
   auto *Symbol = cast<MCSymbolELF>(S);
 
-  if ( Symbol->isISPWriteOnce() )
-    printf("   emitting symbol attribute\n");
-  
   // Adding a symbol attribute always introduces the symbol, note that an
   // important side effect of calling registerSymbol here is to register
   // the symbol with the assembler.
@@ -296,9 +309,6 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
-  if ( Symbol->isISPWriteOnce() )
-    printf("!!! Have common symbol with ISPWriteOnce!\n");
-  
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
     Symbol->setExternal(true);
@@ -511,65 +521,28 @@ void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
 }
 
 //SSITH Addition
-void MCELFStreamer::EmitSSITHMetadataHeader(void){
+void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+					       uint8_t MD_type, uint8_t tag){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
 
-  //Emit the Metadata tag
-  uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
-  support::endian::write(VecOS, MD, support::little);
+  bool switchSection = false;
 
-  uint64_t Base = 0u;
-  support::endian::write(VecOS, Base, support::little);
-
-  DF = getOrCreateDataFragment();
-  DF->getContents().append(Code.begin(), Code.end());
-}
-
-void MCELFStreamer::EmitSSITHMetadataDataEntry(MCFixup &Fixup,
-					       uint8_t MD_type, uint8_t tag){
-  SmallString<256> Code;
-  raw_svector_ostream VecOS(Code);
-  MCDataFragment *DF = getOrCreateDataFragment();
- 
-  // Emit the Metadata tag
-  assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
-  uint8_t MD = MD_type;
-  support::endian::write(VecOS, MD, support::little);
-
-  //Our placeholder 0 bytes for the relative address
-  uint32_t Bits = 0;
-  support::endian::write(VecOS, Bits, support::little);
- 
-  if(MD_type == DMD_FUNCTION_RANGE)
-    support::endian::write(VecOS, Bits, support::little);
+  const auto ISPMetadataSection =
+    getContext().getObjectFileInfo()->getISPMetadataSection();
   
-  //The metadata tag specifier
-  if(MD_type != DMD_FUNCTION_RANGE){
-    assert(tag && 
-        "[SSITH Error] Must have a non null tag for op types other than function range");
-    MD = tag;
-    support::endian::write(VecOS, MD, support::little);
+  if ( getCurrentSectionOnly() != ISPMetadataSection ) {
+    switchSection = true;
+    PushSection();
+    SwitchSection(ISPMetadataSection);
   }
-
-  Fixup.setOffset(Fixup.getOffset() + DF->getContents().size() + 1);
-  DF->getFixups().push_back(Fixup);
-  DF->getContents().append(Code.begin(), Code.end());
-}
-
-//SSITH Addition
-void MCELFStreamer::EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
-					       uint8_t MD_type, uint8_t tag){
-  SmallString<256> Code;
-  raw_svector_ostream VecOS(Code);
-  MCDataFragment *DF;
-
+  
   // Emit the Metadata tag
   assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
   uint8_t MD = MD_type;
   support::endian::write(VecOS, MD, support::little);
-
+  
   //Our placeholder 0 bytes for the relative address
   uint32_t Bits = 0;
   support::endian::write(VecOS, Bits, support::little);
@@ -593,6 +566,9 @@ void MCELFStreamer::EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
     DF->getFixups().push_back(Fixups[i]);
   }
   DF->getContents().append(Code.begin(), Code.end());
+
+  if ( switchSection )
+    PopSection();
 }
 
 //SSITH Addition

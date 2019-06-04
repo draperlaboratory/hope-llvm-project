@@ -585,10 +585,7 @@ public:
                             SMLoc Loc = SMLoc()) = 0;
 
   /// SSITH metadata write - only defined by MCELFStreamer
-  virtual void EmitSSITHMetadataHeader(void) {}
-  virtual void EmitSSITHMetadataDataEntry(MCFixup &Fixup,
-					  uint8_t MD_type, uint8_t tag){}
-  virtual void EmitSSITHMetadataCodeEntry(SmallVector<MCFixup, 4> &Fixups,
+  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
                                       uint8_t MD_type, uint8_t tag) {}
   virtual char *SSITHpopLastInstruction(int nbytes) { return nullptr; }
   virtual void SSITHpushInstruction(char *inst, int nbytes) {}

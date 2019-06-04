@@ -1175,8 +1175,6 @@ OperandMatchResultTy RISCVAsmParser::parseBareSymbol(OperandVector &Operands) {
 
   MCSymbol *Sym = getContext().getOrCreateSymbol(Identifier);
 
-  
-  
   if (Sym->isVariable()) {
     const MCExpr *V = Sym->getVariableValue(/*SetUsed=*/false);
     if (!isa<MCSymbolRefExpr>(V)) {

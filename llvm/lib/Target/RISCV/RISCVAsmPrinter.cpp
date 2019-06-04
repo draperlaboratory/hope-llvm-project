@@ -25,7 +25,6 @@
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
-#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -65,8 +64,7 @@ public:
                                    const MachineInstr *MI);
 
   //SSITH Addition
-  void EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) override;
-  void EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag) override;
+  void EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) override;
   void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end) override;
   
   // Wrapper needed for tblgenned pseudo lowering.
@@ -110,38 +108,10 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end){
   Fixups.push_back(
       MCFixup::create(0, MEend, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, DMD_FUNCTION_RANGE, 0);
+  OutStreamer->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
-void RISCVAsmPrinter::EmitSSITHMetadataVar(MCSymbol *Sym, ISPMetadataTag_t tag) {
-
-  MCContext &Context = getObjFileLowering().getContext();
-  MCSectionELF *ISP = Context.getELFSection(ISP_METADATA_ELF_SECTION_NAME, ELF::SHT_PROGBITS, 0);
-
-  OutStreamer->PushSection();
-  OutStreamer->SwitchSection(ISP);
-  
-  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
-  MCContext &Ctx = OutContext;
-  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
-  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
-  ME = RISCVMCExpr::create(ME, Kind, Ctx);
-
-  printf("\nEmitting SSITH Metadata Variable!!\n");
-  printf("  name = %s\n\n", Sym->getName());
-  
-  MCFixup Fixup = MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr));
-
-  OutStreamer->EmitSSITHMetadataDataEntry(Fixup, DMD_TAG_ADDRESS_OP, tag);
-
-  //Restore the previous section
-  OutStreamer->PopSection();
-}
-
-//SSITH
-void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag){
-
-  SmallVector<MCFixup, 4> Fixups;
+void RISCVAsmPrinter::EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {
 
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   MCContext &Ctx = OutContext;
@@ -149,11 +119,11 @@ void RISCVAsmPrinter::EmitSSITHMetadataInst(MCSymbol *Sym, uint8_t tag){
   const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
   ME = RISCVMCExpr::create(ME, Kind, Ctx);
   
-  //Push fixup -- the linker will write the 4 byte address for us
+  SmallVector<MCFixup, 4> Fixups;  
   Fixups.push_back(
-      MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  OutStreamer->EmitSSITHMetadataCodeEntry(Fixups, DMD_TAG_ADDRESS_OP, tag);
+  OutStreamer->EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, tag);
 }
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
@@ -230,36 +200,33 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     }
   }
 
-  //Swith to new section for ssith metadata
-  OutStreamer->PushSection();
-  OutStreamer->SwitchSection(ISP);
   if(MI->getFlag(MachineInstr::FnProlog))
-    EmitSSITHMetadataInst(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
+    EmitSSITHMetadata(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
   else if(MI->getFlag(MachineInstr::FnEpilog)){
-    EmitSSITHMetadataInst(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
   }
   else if(MI->getFlag(MachineInstr::FPtrStore)){
     //MI->dump();
     //errs() << "store\n--------------------\n";
-    EmitSSITHMetadataInst(InstSym, DMT_FPTR_STORE_AUTHORITY);
+    EmitSSITHMetadata(InstSym, DMT_FPTR_STORE_AUTHORITY);
   }
   else if(MI->getFlag(MachineInstr::FPtrCreate)){
     //MI->dump();
     //errs() << "create\n--------------------\n";
-    EmitSSITHMetadataInst(InstSym, DMT_FPTR_CREATE_AUTHORITY);
+    EmitSSITHMetadata(InstSym, DMT_FPTR_CREATE_AUTHORITY);
   }
   //return instructions aren't tagged epilog for whatever reason
   else if(MI->isReturn() && !MI->isCall()){
     //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
-    EmitSSITHMetadataInst(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
-    EmitSSITHMetadataInst(InstSym, DMT_RETURN_INSTR);
+    EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadata(InstSym, DMT_RETURN_INSTR);
   }
   //Tag call instructions for 3 class CFI policy
   else if(MI->isCall())
-    EmitSSITHMetadataInst(InstSym, DMT_CALL_INSTR);
+    EmitSSITHMetadata(InstSym, DMT_CALL_INSTR);
   //Tag branch instruction for 3 class CFI policy
   else if(MI->isBranch())
-    EmitSSITHMetadataInst(InstSym, DMT_BRANCH_INSTR);
+    EmitSSITHMetadata(InstSym, DMT_BRANCH_INSTR);
  
   //whether its a tail call or a return (handled separately above) do this
   if(MI->isReturn())
@@ -268,14 +235,12 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   //Targets can also be other things, need a separate if check
   if(retTarget){
     MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadataInst(Tgt, DMT_RET_VALID_TGT);
+    EmitSSITHMetadata(Tgt, DMT_RET_VALID_TGT);
   }
   else if(branchFallThrough){
     MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadataInst(Tgt, DMT_BRANCH_VALID_TGT);
+    EmitSSITHMetadata(Tgt, DMT_BRANCH_VALID_TGT);
   }
-  //Restore the previous section
-  OutStreamer->PopSection();
 
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
@@ -284,7 +249,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     OutStreamer->EmitLabel(CurPos);
     OutStreamer->PushSection();
     OutStreamer->SwitchSection(ISP);
-    EmitSSITHMetadataInst(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
+    EmitSSITHMetadata(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
     OutStreamer->PopSection();
 
     //Emit our new store

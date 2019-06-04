@@ -9,7 +9,6 @@
 // Holds state from .cv_file and .cv_loc directives for later emission.
 //
 //===----------------------------------------------------------------------===//
-#include "llvm/MC/MCSymbolELF.h"
 
 #include "llvm/MC/MCCodeView.h"
 #include "llvm/ADT/STLExtras.h"
@@ -631,13 +630,6 @@ void CodeViewContext::encodeDefRange(MCAsmLayout &Layout,
     // If the range size of multiple consecutive ranges is under the max,
     // combine the ranges and emit some gaps.
     const MCSymbol *RangeBegin = Frag.getRanges()[I].first;
-
-    const auto *SymA = cast<MCSymbolELF>(RangeBegin);
-    if ( SymA->isISPWriteOnce() )
-      printf("RangeBegin symbol with ISPWriteOnce!\n");
-  
-
-    
     unsigned RangeSize = GapAndRangeSizes[I].second;
     size_t J = I + 1;
     for (; J != E; ++J) {
