@@ -39,6 +39,64 @@
 
 using namespace llvm;
 
+static void ispdebugsymbol(MCSymbol *S, char *str) {
+
+  printf("%s: ispdebugsymbol\n", str);
+  
+  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
+    printf("  found DMT_CFI3L_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
+    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
+    printf("  found DMT_BRANCH_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
+    printf("  found DMT_RET_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
+    printf("  found DMT_RETURN_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
+    printf("  found DMT_CALL_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
+    printf("  found DMT_BRANCH_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
+    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
+    printf("  found DMT_WRITE_ONCE\n");
+  
+}
+
+static void ispdebugsymbol(const MCInst *S, char *str) {
+
+  printf("%s: ispdebugsymbol\n", str);
+  
+  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
+    printf("  found DMT_CFI3L_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
+    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
+    printf("  found DMT_BRANCH_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
+    printf("  found DMT_RET_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
+    printf("  found DMT_RETURN_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
+    printf("  found DMT_CALL_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
+    printf("  found DMT_BRANCH_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
+    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
+    printf("  found DMT_WRITE_ONCE\n");
+  
+}
+
 MCELFStreamer::MCELFStreamer(MCContext &Context,
                              std::unique_ptr<MCAsmBackend> TAB,
                              std::unique_ptr<MCObjectWriter> OW,
@@ -105,6 +163,37 @@ static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
   DF->getContents().append(Code.begin(), Code.end());
 }
 
+void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym) {
+
+  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
+  //  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
+  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
+  //  ME = RISCVMCExpr::create(ME, Kind, es->getContext());
+  
+  SmallVector<MCFixup, 4> Fixups;  
+  Fixups.push_back(
+		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+
+  for ( int i = 1; i <= 11; i++ )
+    if ( Sym->containsISPMetadataTag(i) )
+	 EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
+}
+
+void MCELFStreamer::tempEmitSSITHMetadata(const MCInst &Inst) {
+
+  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
+  const MCExpr *ME = MCSymbolRefExpr::create(getContext().createTempSymbol(), MCSymbolRefExpr::VK_None, getContext());
+  
+  SmallVector<MCFixup, 4> Fixups;  
+  Fixups.push_back(
+		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+
+  // todo generalize on tagsets
+  for ( int i = 1; i <= 11; i++ )
+    if ( Inst.containsISPMetadataTag(i) )
+	 EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
+}
+
 void MCELFStreamer::InitSections(bool NoExecStack) {
   MCContext &Ctx = getContext();
 
@@ -122,6 +211,11 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc);
 
+  if ( S->containsISPMetadata() )
+    tempEmitSSITHMetadata(S);
+  
+  ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S,Loc)");
+  
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
   if (Section.getFlags() & ELF::SHF_TLS)
@@ -132,6 +226,11 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc, MCFragment *F) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc, F);
 
+  ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S, loc, f)");
+
+  if ( S->containsISPMetadata() )
+    tempEmitSSITHMetadata(S);
+  
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
   if (Section.getFlags() & ELF::SHF_TLS)
@@ -211,6 +310,8 @@ static unsigned CombineSymbolTypes(unsigned T1, unsigned T2) {
 bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
   auto *Symbol = cast<MCSymbolELF>(S);
 
+  ispdebugsymbol(S, "MCELFStreamer::EmitSymbolAttribute");
+  
   // Adding a symbol attribute always introduces the symbol, note that an
   // important side effect of calling registerSymbol here is to register
   // the symbol with the assembler.
@@ -309,6 +410,11 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
+  ispdebugsymbol(S, "MCELFStreamer::EmitCommonSymbol");
+
+  if ( S->containsISPMetadata() )
+    tempEmitSSITHMetadata(S);
+  
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
     Symbol->setExternal(true);
@@ -353,6 +459,9 @@ void MCELFStreamer::emitELFSymverDirective(StringRef AliasName,
 void MCELFStreamer::EmitLocalCommonSymbol(MCSymbol *S, uint64_t Size,
                                           unsigned ByteAlignment) {
   auto *Symbol = cast<MCSymbolELF>(S);
+
+  ispdebugsymbol(S, "MCELFStreamer::EmitLocalCommonSymbol");
+
   // FIXME: Should this be caught and done earlier?
   getAssembler().registerSymbol(*Symbol);
   Symbol->setBinding(ELF::STB_LOCAL);
@@ -513,6 +622,12 @@ void MCELFStreamer::finalizeCGProfile() {
 
 void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
                                        const MCSubtargetInfo &STI) {
+
+  if ( Inst.containsISPMetadata() ) {
+    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToFragment");
+    tempEmitSSITHMetadata(Inst);
+  }
+
   this->MCObjectStreamer::EmitInstToFragment(Inst, STI);
   MCRelaxableFragment &F = *cast<MCRelaxableFragment>(getCurrentFragment());
 
@@ -612,6 +727,11 @@ void MCELFStreamer::EmitInstToData(const MCInst &Inst,
   raw_svector_ostream VecOS(Code);
   Assembler.getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
 
+  if ( Inst.containsISPMetadata() ) {
+    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToFragment");
+    tempEmitSSITHMetadata(Inst);
+  }
+  
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i)
     fixSymbolsInTLSFixups(Fixups[i].getValue());
 

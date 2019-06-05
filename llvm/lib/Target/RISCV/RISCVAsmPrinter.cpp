@@ -113,6 +113,8 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end){
 
 void RISCVAsmPrinter::EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {
 
+  Sym->setISPMetadataTag(tag);
+  
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   MCContext &Ctx = OutContext;
   RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
@@ -127,9 +129,6 @@ void RISCVAsmPrinter::EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {
 }
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-  /* SSITH BEGIN */
-  MCSymbol *InstSym, *PriorInstSym;
-  InstSym = PriorInstSym = nullptr;
 
   // Do any auto-generated pseudo lowerings.
   if (!emitPseudoExpansionLowering(*OutStreamer, MI)){
@@ -137,7 +136,11 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     LowerRISCVMachineInstrToMCInst(MI, TmpInst, *this);
     EmitToStreamer(*OutStreamer, TmpInst);
   }
-    
+
+  /* SSITH BEGIN */
+  MCSymbol *InstSym, *PriorInstSym;
+  InstSym = PriorInstSym = nullptr;
+
   char *tmp = OutStreamer->SSITHpopLastInstruction(4);
   InstSym = OutContext.createTempSymbol();
   OutStreamer->EmitLabel(InstSym);
@@ -151,7 +154,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     OutStreamer->SSITHpushInstruction(tmp2, 4);
   }
   OutStreamer->SSITHpushInstruction(tmp, 4);
-
+  
   bool retTarget = false;
   bool branchFallThrough = false;
 
@@ -196,47 +199,9 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     }
   }
 
-  if(MI->getFlag(MachineInstr::FnProlog))
-    EmitSSITHMetadata(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
-  else if(MI->getFlag(MachineInstr::FnEpilog)){
-    EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
-  }
-  else if(MI->getFlag(MachineInstr::FPtrStore)){
-    //MI->dump();
-    //errs() << "store\n--------------------\n";
-    EmitSSITHMetadata(InstSym, DMT_FPTR_STORE_AUTHORITY);
-  }
-  else if(MI->getFlag(MachineInstr::FPtrCreate)){
-    //MI->dump();
-    //errs() << "create\n--------------------\n";
-    EmitSSITHMetadata(InstSym, DMT_FPTR_CREATE_AUTHORITY);
-  }
-  //return instructions aren't tagged epilog for whatever reason
-  else if(MI->isReturn() && !MI->isCall()){
-    //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
-    EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
-    EmitSSITHMetadata(InstSym, DMT_RETURN_INSTR);
-  }
-  //Tag call instructions for 3 class CFI policy
-  else if(MI->isCall())
-    EmitSSITHMetadata(InstSym, DMT_CALL_INSTR);
-  //Tag branch instruction for 3 class CFI policy
-  else if(MI->isBranch())
-    EmitSSITHMetadata(InstSym, DMT_BRANCH_INSTR);
- 
   //whether its a tail call or a return (handled separately above) do this
   if(MI->isReturn())
     EmitSSITHMetadataFnRange(CurrentFnSym, InstSym);
-
-  //Targets can also be other things, need a separate if check
-  if(retTarget){
-    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadata(Tgt, DMT_RET_VALID_TGT);
-  }
-  else if(branchFallThrough){
-    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadata(Tgt, DMT_BRANCH_VALID_TGT);
-  }
 
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
@@ -250,6 +215,17 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     LowerToSSITHEpilogStore(MI, SSITHStore, *this);
     EmitToStreamer(*OutStreamer, SSITHStore);
   }
+  
+  //Targets can also be other things, need a separate if check
+  if(retTarget){
+    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
+    EmitSSITHMetadata(Tgt, DMT_RET_VALID_TGT);
+  }
+  else if(branchFallThrough){
+    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
+    EmitSSITHMetadata(Tgt, DMT_BRANCH_VALID_TGT);
+  }
+  
 }
 
 bool RISCVAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,

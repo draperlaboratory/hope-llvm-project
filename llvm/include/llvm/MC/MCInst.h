@@ -17,6 +17,7 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/Support/SMLoc.h"
 #include <cassert>
 #include <cstddef>
@@ -164,6 +165,9 @@ class MCInst {
   // the flags have any sense on target level only (e.g. prefixes on x86).
   unsigned Flags = 0;
 
+  // isp metadata recording
+  ISPMetadataTagSet ISPMetadata;
+  
 public:
   MCInst() = default;
 
@@ -207,6 +211,26 @@ public:
                    StringRef Separator = " ") const;
   void dump_pretty(raw_ostream &OS, StringRef Name,
                    StringRef Separator = " ") const;
+
+  void setISPMetadataTag(ISPMetadataTag_t t) {
+    ISPMetadata.addISPMetadataTag(t);
+  }
+  
+  bool containsISPMetadataTag(ISPMetadataTag_t t) const {
+    return ISPMetadata.containsISPMetadataTag(t);
+  }
+
+  bool containsISPMetadata(void) const {
+    return ISPMetadata.containsISPMetadata();
+  }
+  
+  void setISPMetadataTagSet(ISPMetadataTagSet *ts) {
+    ISPMetadata = ts;
+  }
+  
+  ISPMetadataTagSet *getISPMetadataTagSet(void) {
+    return &ISPMetadata;
+  }
 };
 
 inline raw_ostream& operator<<(raw_ostream &OS, const MCOperand &MO) {

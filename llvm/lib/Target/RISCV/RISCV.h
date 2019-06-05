@@ -28,7 +28,7 @@ class MachineOperand;
 class PassRegistry;
 
 void LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
-                                    const AsmPrinter &AP);
+                                    AsmPrinter &AP);
 //SSITH
 void LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
                                     const AsmPrinter &AP);

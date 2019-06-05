@@ -59,6 +59,8 @@ MCSymbol *MachineBasicBlock::getSymbol() const {
     CachedMCSymbol = Ctx.getOrCreateSymbol(Twine(Prefix) + "BB" +
                                            Twine(MF->getFunctionNumber()) +
                                            "_" + Twine(getNumber()));
+    if ( CachedMCSymbol ) 
+      CachedMCSymbol->setISPMetadataTag(DMT_BRANCH_VALID_TGT);
   }
 
   return CachedMCSymbol;

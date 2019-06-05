@@ -33,6 +33,35 @@ typedef uint8_t ISPMetadataTag_t;
 
 #define ISP_METADATA_ELF_SECTION_NAME ".dover_metadata"
 
+class ISPMetadataTagSet {
+
+ private:
+  uint32_t tags;
+
+ public:
+  
+  ISPMetadataTagSet() {
+    tags = 0;
+  }
+
+  void addISPMetadataTag(ISPMetadataTag_t t) {
+    tags |= (0x1 << (uint32_t)t);
+  }
+
+  bool containsISPMetadataTag(ISPMetadataTag_t t) const {
+    return tags & (0x1 << (uint32_t)t);
+  }
+
+  bool containsISPMetadata(void) const {
+    return tags;
+  }
+  
+  ISPMetadataTagSet& operator= (ISPMetadataTagSet *ts) {
+    tags = ts->tags;
+    return *this;
+  }
+};
+
 /* New metadata format in images:
 
 The goal with this format is to establish a smaller encoding, and a somewhat more general purpose
@@ -143,7 +172,7 @@ on any given address.
 #define DMD_FUNCTION_RANGE 10u  /*Followed by 32bit start and 32bit end addresses*/
 
 /*
-  Tag specifiers:
+  Tag specifiers... also serve as offset in MCSymbol ISPMetadata flags struct.
  */
 #define DMT_CFI3L_VALID_TGT 1u
 #define DMT_STACK_PROLOGUE_AUTHORITY 2u

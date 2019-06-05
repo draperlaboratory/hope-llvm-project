@@ -23,6 +23,10 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCContext.h"
+
+
 using namespace llvm;
 
 static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
@@ -105,7 +109,7 @@ bool llvm::LowerRISCVMachineOperandToMCOperand(const MachineOperand &MO,
 }
 
 void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
-                                          const AsmPrinter &AP) {
+                                          AsmPrinter &AP) {
   OutMI.setOpcode(MI->getOpcode());
 
   for (const MachineOperand &MO : MI->operands()) {
@@ -113,6 +117,56 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
     if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
       OutMI.addOperand(MCOp);
   }
+
+  // BEGIN SSITH
+
+  /* SSITH BEGIN */
+  MCSymbol *InstSym;
+  InstSym  = nullptr;
+
+  const std::unique_ptr<MCStreamer> &OutStreamer = AP.OutStreamer;
+  MCContext &OutContext = AP.OutContext;
+  
+  if(MI->getFlag(MachineInstr::FnProlog)) {
+    OutMI.setISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
+  }
+  else if(MI->getFlag(MachineInstr::FnEpilog)){
+    OutMI.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
+  }
+
+  if(MI->getFlag(MachineInstr::FPtrStore)){
+    OutMI.setISPMetadataTag(DMT_FPTR_STORE_AUTHORITY);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_FPTR_STORE_AUTHORITY);
+  }
+  else if(MI->getFlag(MachineInstr::FPtrCreate)){
+    //MI->dump();
+    //errs() << "create\n--------------------\n";
+    OutMI.setISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_FPTR_CREATE_AUTHORITY);
+  }
+  //return instructions aren't tagged epilog for whatever reason
+  else if(MI->isReturn() && !MI->isCall()){
+
+    OutMI.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
+    OutMI.setISPMetadataTag(DMT_RETURN_INSTR);
+    
+    //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
+    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_RETURN_INSTR);
+  }
+  //Tag call instructions for 3 class CFI policy
+  else if(MI->isCall()) {
+    OutMI.setISPMetadataTag(DMT_CALL_INSTR);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_CALL_INSTR);
+  }
+  //Tag branch instruction for 3 class CFI policy
+  else if(MI->isBranch()) {
+    OutMI.setISPMetadataTag(DMT_BRANCH_INSTR);
+    //    AP.EmitSSITHMetadata(InstSym, DMT_BRANCH_INSTR);
+  }
+
 }
 
 void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,

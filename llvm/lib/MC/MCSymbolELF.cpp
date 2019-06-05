@@ -36,9 +36,8 @@ enum {
   // One bit.
   ELF_BindingSet_Shift = 12,
 
-  // ISP metadata flags
-  // one bit
-  ELF_ISP_Write_Once_Shift = 13
+  // ISP metadata flags... each one bit.
+  ELF_ISP_Write_Once_Shift = 13, 
 };
 }
   
@@ -202,13 +201,4 @@ void MCSymbolELF::setIsBindingSet() const {
 bool MCSymbolELF::isBindingSet() const {
   return getFlags() & (0x1 << ELF_BindingSet_Shift);
 }
-
-void MCSymbolELF::setISPWriteOnce() const {
-  uint32_t OtherFlags = getFlags() & ~(0x1 << ELF_ISP_Write_Once_Shift);
-  setFlags(OtherFlags | (1 << ELF_ISP_Write_Once_Shift));
-}
-
-bool MCSymbolELF::isISPWriteOnce() const {
-  return getFlags() & (0x1 << ELF_ISP_Write_Once_Shift);
-}  
 }

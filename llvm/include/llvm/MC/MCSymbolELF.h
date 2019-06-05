@@ -8,6 +8,7 @@
 #ifndef LLVM_MC_MCSYMBOLELF_H
 #define LLVM_MC_MCSYMBOLELF_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/MC/MCSymbol.h"
 
 namespace llvm {
@@ -44,9 +45,6 @@ public:
 
   void setIsSignature() const;
   bool isSignature() const;
-
-  void setISPWriteOnce() const;
-  bool isISPWriteOnce() const;
   
   static bool classof(const MCSymbol *S) { return S->isELF(); }
 

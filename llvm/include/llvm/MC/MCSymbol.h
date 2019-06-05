@@ -17,6 +17,7 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/MC/MCFragment.h"
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include <cassert>
@@ -122,6 +123,9 @@ protected:
   enum : unsigned { NumFlagsBits = 16 };
   mutable uint32_t Flags : NumFlagsBits;
 
+  // isp metadata recording
+  ISPMetadataTagSet ISPMetadata;
+  
   /// Index field, for use by the object file implementation.
   mutable uint32_t Index = 0;
 
@@ -401,6 +405,26 @@ public:
   /// dump - Print the value to stderr.
   void dump() const;
 
+  void setISPMetadataTag(ISPMetadataTag_t t) {
+    ISPMetadata.addISPMetadataTag(t);
+  }
+  
+  bool containsISPMetadataTag(ISPMetadataTag_t t) {
+    return ISPMetadata.containsISPMetadataTag(t);
+  }
+
+  bool containsISPMetadata(void) {
+    return ISPMetadata.containsISPMetadata();
+  }
+  
+  void setISPMetadataTagSet(ISPMetadataTagSet *ts) {
+    ISPMetadata = ts;
+  }
+  
+  ISPMetadataTagSet *getISPMetadataTagSet(void)  {
+    return &ISPMetadata;
+  }
+  
 protected:
   /// Get the (implementation defined) symbol flags.
   uint32_t getFlags() const { return Flags; }

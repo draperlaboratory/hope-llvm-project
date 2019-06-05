@@ -84,6 +84,8 @@ private:
   void EmitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;
   
   //SSITH
+  void tempEmitSSITHMetadata(const MCInst &Inst);
+  void tempEmitSSITHMetadata(MCSymbol *Sym);
   void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
                               uint8_t MD_type, uint8_t tag) override;
   char *SSITHpopLastInstruction(int nbytes) override;
