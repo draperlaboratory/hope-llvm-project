@@ -28,6 +28,8 @@ public:
 
   ~MCELFStreamer() override = default;
 
+  bool ISPSecInitialized;
+  
   /// state management
   void reset() override {
     SeenIdent = false;
@@ -84,13 +86,13 @@ private:
   void EmitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;
   
   //SSITH
-  void tempEmitSSITHMetadata(const MCInst &Inst);
-  void tempEmitSSITHMetadata(MCSymbol *Sym);
+  void tempEmitSSITHMetadata(const MCInst &Inst, int i);
+  void tempEmitSSITHMetadata(MCSymbol *Sym, int i);
   void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
                               uint8_t MD_type, uint8_t tag) override;
   char *SSITHpopLastInstruction(int nbytes) override;
   void SSITHpushInstruction(char *inst, int nbytes) override;
-  
+
   void fixSymbolsInTLSFixups(const MCExpr *expr);
   void finalizeCGProfileEntry(const MCSymbolRefExpr *&S);
   void finalizeCGProfile();

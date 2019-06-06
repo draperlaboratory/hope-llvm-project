@@ -56,7 +56,7 @@ class ISPMetadataTagSet {
     return tags;
   }
   
-  ISPMetadataTagSet& operator= (ISPMetadataTagSet *ts) {
+  ISPMetadataTagSet& operator= (const ISPMetadataTagSet *ts) {
     tags = ts->tags;
     return *this;
   }

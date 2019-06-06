@@ -102,7 +102,7 @@ MCELFStreamer::MCELFStreamer(MCContext &Context,
                              std::unique_ptr<MCObjectWriter> OW,
                              std::unique_ptr<MCCodeEmitter> Emitter)
     : MCObjectStreamer(Context, std::move(TAB), std::move(OW),
-                       std::move(Emitter)) {}
+                       std::move(Emitter)) { ISPSecInitialized = false; }
 
 bool MCELFStreamer::isBundleLocked() const {
   return getCurrentSectionOnly()->isBundleLocked();
@@ -152,6 +152,8 @@ static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
 
+  printf("emitting metadata header!\n");
+  
   //Emit the Metadata tag
   uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
   support::endian::write(VecOS, MD, support::little);
@@ -161,45 +163,64 @@ static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
 
   MCDataFragment *DF = Streamer->getOrCreateDataFragment();
   DF->getContents().append(Code.begin(), Code.end());
+
+  Streamer->ISPSecInitialized = true;
 }
 
-void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym) {
+void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
 
+  if ( i == 2 || i == 3 || i == 4 || i == 10 )
+    return;
+  
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   //  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
   const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
   //  ME = RISCVMCExpr::create(ME, Kind, es->getContext());
-  
+
+  if ( Sym->containsISPMetadataTag(DMT_CALL_INSTR) ) {
+    printf("MEDEBUGprint\n");
+    ME->dump();
+  }
+    
   SmallVector<MCFixup, 4> Fixups;  
   Fixups.push_back(
 		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  for ( int i = 1; i <= 11; i++ )
-    if ( Sym->containsISPMetadataTag(i) )
-	 EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
+  EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
 }
 
-void MCELFStreamer::tempEmitSSITHMetadata(const MCInst &Inst) {
+void MCELFStreamer::tempEmitSSITHMetadata(const MCInst &Inst, int i) {
 
-  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
-  const MCExpr *ME = MCSymbolRefExpr::create(getContext().createTempSymbol(), MCSymbolRefExpr::VK_None, getContext());
+  if ( i == 2 || i == 3 || i == 4 || i == 10 )
+    return;
   
-  SmallVector<MCFixup, 4> Fixups;  
-  Fixups.push_back(
-		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
+  MCSymbol *InstSym = getContext().createTempSymbol();
 
-  // todo generalize on tagsets
-  for ( int i = 1; i <= 11; i++ )
-    if ( Inst.containsISPMetadataTag(i) )
-	 EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
+  printf("creating temp symbol\n");
+  
+  InstSym->setISPMetadataTag(i);
+  
+  EmitLabel(InstSym);
+
+  printf("done creating temp symbol\n");
+  //  const MCExpr *ME = MCSymbolRefExpr::create(InstSym, MCSymbolRefExpr::VK_None, getContext());
+
+  //  if ( Inst.containsISPMetadataTag(DMT_CALL_INSTR) ) {
+//    printf("MEDEBUGprint\n");
+//    ME->dump();
+//  }
+  
+//  SmallVector<MCFixup, 4> Fixups;  
+//  Fixups.push_back(
+//		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+
+//  EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
 }
 
 void MCELFStreamer::InitSections(bool NoExecStack) {
   MCContext &Ctx = getContext();
 
-  SwitchSection(Ctx.getObjectFileInfo()->getISPMetadataSection());
-  EmitSSITHMetadataHeader(this);
-  
   SwitchSection(Ctx.getObjectFileInfo()->getTextSection());
   EmitCodeAlignment(4);
 
@@ -211,10 +232,14 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc);
 
-  if ( S->containsISPMetadata() )
-    tempEmitSSITHMetadata(S);
-  
-  ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S,Loc)");
+  if ( S->containsISPMetadata() ) {
+    ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S,Loc)");
+    for ( int i = 1; i <= 11; i++ )
+      if ( S->containsISPMetadataTag(i) ) {
+	printf("emitting md from label\n");
+	tempEmitSSITHMetadata(S, i);
+      }
+  }
   
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
@@ -226,11 +251,13 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc, MCFragment *F) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc, F);
 
-  ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S, loc, f)");
-
-  if ( S->containsISPMetadata() )
-    tempEmitSSITHMetadata(S);
-  
+  if ( S->containsISPMetadata() ) {
+    ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S, loc, f)");
+    for ( int i = 1; i <= 11; i++ )
+      if ( S->containsISPMetadataTag(i) )
+	tempEmitSSITHMetadata(S, i);
+  }
+    
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
   if (Section.getFlags() & ELF::SHF_TLS)
@@ -413,7 +440,9 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   ispdebugsymbol(S, "MCELFStreamer::EmitCommonSymbol");
 
   if ( S->containsISPMetadata() )
-    tempEmitSSITHMetadata(S);
+    for ( int i = 1; i <= 11; i++ )
+      if ( S->containsISPMetadataTag(i) )
+	tempEmitSSITHMetadata(S, i);
   
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
@@ -625,7 +654,10 @@ void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
 
   if ( Inst.containsISPMetadata() ) {
     ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToFragment");
-    tempEmitSSITHMetadata(Inst);
+    // todo generalize on tagsets
+    for ( int i = 1; i <= 11; i++ )
+      if ( Inst.containsISPMetadataTag(i) )
+	tempEmitSSITHMetadata(Inst, i);
   }
 
   this->MCObjectStreamer::EmitInstToFragment(Inst, STI);
@@ -643,15 +675,20 @@ void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
   MCDataFragment *DF;
 
   bool switchSection = false;
-
+  
+  printf("EMITMETADTA %d\n", tag);
+  
   const auto ISPMetadataSection =
     getContext().getObjectFileInfo()->getISPMetadataSection();
-  
+
   if ( getCurrentSectionOnly() != ISPMetadataSection ) {
     switchSection = true;
     PushSection();
     SwitchSection(ISPMetadataSection);
   }
+
+  if ( !ISPSecInitialized ) 
+    EmitSSITHMetadataHeader(this);
   
   // Emit the Metadata tag
   assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
@@ -728,8 +765,11 @@ void MCELFStreamer::EmitInstToData(const MCInst &Inst,
   Assembler.getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
 
   if ( Inst.containsISPMetadata() ) {
-    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToFragment");
-    tempEmitSSITHMetadata(Inst);
+    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToData");
+    for ( int i = 1; i <= 11; i++ ) {
+      if ( Inst.containsISPMetadataTag(i) )
+	tempEmitSSITHMetadata(Inst, i);
+    }
   }
   
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i)

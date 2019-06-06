@@ -109,9 +109,11 @@ public:
     FnEpilog     = 1 << 15,             // Instruction is part of the compiler generated
                                         // epilog
     FPtrStore    = 1 << 16,             // Instruction writes a function pointer to memory
-    FPtrCreate   = 1 << 17              // Instruction creates a function pointer
+    FPtrCreate   = 1 << 17,             // Instruction creates a function pointer
+    CallTarget   = 1 << 18,             // first instruction of a function
+    ReturnTarget = 1 << 19,             // first instruction after a call
+    BranchTarget = 1 << 20              // a branch lands here.
   };
-  //SSITH NOTE: Flags is only 16 bits long, getting close to the max here
 
 private:
   const MCInstrDesc *MCID;              // Instruction descriptor.

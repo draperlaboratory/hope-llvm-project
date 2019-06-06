@@ -28,6 +28,7 @@ extern "C" void LLVMInitializeRISCVTarget() {
   RegisterTargetMachine<RISCVTargetMachine> Y(getTheRISCV64Target());
   auto PR = PassRegistry::getPassRegistry();
   initializeRISCVExpandPseudoPass(*PR);
+  initializeRISCVISPMetadataPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT) {
@@ -100,6 +101,7 @@ void RISCVPassConfig::addPreEmitPass2() {
   // possibility for other passes to break the requirements for forward
   // progress in the LR/SC block.
   addPass(createRISCVExpandPseudoPass());
+  addPass(createRISCVISPMetadataPass());
 }
 
 void RISCVPassConfig::addPreRegAlloc() {

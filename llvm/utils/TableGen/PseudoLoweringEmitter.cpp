@@ -212,6 +212,7 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
         << Source.TheDef->getName() << ": {\n"
         << "      MCInst TmpInst;\n"
         << "      MCOperand MCOp;\n"
+	<< "      if ( MI->isReturn() ) TmpInst.setISPMetadataTag(DMT_RETURN_INSTR)\n;"
         << "      TmpInst.setOpcode(" << Dest.Namespace << "::"
         << Dest.TheDef->getName() << ");\n";
 

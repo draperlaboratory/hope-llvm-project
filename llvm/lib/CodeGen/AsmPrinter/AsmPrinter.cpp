@@ -1098,11 +1098,16 @@ void AsmPrinter::EmitFunctionBody() {
         HasAnyRealCode = true;
         ++NumInstsInFunction;
         //SSITH
-        if(NumInstsInFunction == 1){
-          EmitSSITHMetadata(CurrentFnSym, DMT_CFI3L_VALID_TGT);
+	//        if(NumInstsInFunction == 1){
+	  //	  EmitSSITHMetadata(CurrentFnSym, DMT_CFI3L_VALID_TGT);
+	  //MI.setFlag(MachineInstr::CallTarget);
+	  //	  MI.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
+	  //	  CurrentFnSym->setISPMetadataTag(DMT_CFI3L_VALID_TGT);
+	//	  printf("tracking firstinstr in basicblock\n");
 
-	  printf("tracking firstinstr in basicblock\n");
-	}
+	//	  if (MI.getPreInstrSymbol())
+	//	    printf("shit has a pre-instr symbol\n");
+	//	}
       }
 
       // If there is a pre-instruction symbol, emit a label for it here.
@@ -1227,13 +1232,6 @@ void AsmPrinter::EmitFunctionBody() {
     CurrentFnEnd = createTempSymbol("func_end");
     OutStreamer->EmitLabel(CurrentFnEnd);
   }
-
-  //SSITH -- add in function range tag
-  //NOTE - Now doing this in RISCVAsmPrinter when we find the return inst
-  //OutStreamer->PushSection();
-  //OutStreamer->SwitchSection(ISP);
-  //EmitSSITHMetadataFnRange(CurrentFnSym, CurrentFnEnd, getSubtargetInfo());
-  //OutStreamer->PopSection();
 
   // If the target wants a .size directive for the size of the function, emit
   // it.
@@ -2991,6 +2989,7 @@ void AsmPrinter::EmitBasicBlockStart(const MachineBasicBlock &MBB) const {
     emitBasicBlockLoopComments(MBB, MLI, *this);
   }
 
+  // TODO: condition this on SSITH compilation
   // Print the main label for the block.
   // if (MBB.pred_empty() ||
   //     (isBlockOnlyReachableByFallthrough(&MBB) && !MBB.isEHFuncletEntry() &&

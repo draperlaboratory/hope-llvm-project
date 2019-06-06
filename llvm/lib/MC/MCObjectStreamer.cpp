@@ -357,11 +357,49 @@ void MCObjectStreamer::EmitInstructionImpl(const MCInst &Inst,
   EmitInstToFragment(Inst, STI);
 }
 
+static void ispdebugsymbol(const MCInst *S, char *str) {
+
+  printf("%s: ispdebugsymbol\n", str);
+  
+  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
+    printf("  found DMT_CFI3L_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
+    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
+    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
+    printf("  found DMT_BRANCH_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
+    printf("  found DMT_RET_VALID_TGT\n");
+  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
+    printf("  found DMT_RETURN_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
+    printf("  found DMT_CALL_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
+    printf("  found DMT_BRANCH_INSTR\n");
+  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
+    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
+  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
+    printf("  found DMT_WRITE_ONCE\n");
+  
+}
+
+
 void MCObjectStreamer::EmitInstToFragment(const MCInst &Inst,
                                           const MCSubtargetInfo &STI) {
   if (getAssembler().getRelaxAll() && getAssembler().isBundlingEnabled())
     llvm_unreachable("All instructions should have already been relaxed");
 
+  if ( Inst.containsISPMetadata() ) {
+    ispdebugsymbol(&Inst, "MCObjectStreamer::EmitInstToData");
+    //    for ( int i = 1; i <= 11; i++ )
+    //      if ( Inst.containsISPMetadataTag(i) )
+    //	tempEmitSSITHMetadata(Inst, i);
+  }
+
+  
   // Always create a new, separate fragment here, because its size can change
   // during relaxation.
   MCRelaxableFragment *IF = new MCRelaxableFragment(Inst, STI);

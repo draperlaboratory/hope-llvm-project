@@ -224,11 +224,11 @@ public:
     return ISPMetadata.containsISPMetadata();
   }
   
-  void setISPMetadataTagSet(ISPMetadataTagSet *ts) {
+  void setISPMetadataTagSet(const ISPMetadataTagSet *ts) {
     ISPMetadata = ts;
   }
   
-  ISPMetadataTagSet *getISPMetadataTagSet(void) {
+  const ISPMetadataTagSet *getISPMetadataTagSet(void) const {
     return &ISPMetadata;
   }
 };

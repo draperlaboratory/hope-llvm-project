@@ -94,6 +94,8 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end){
   
   SmallVector<MCFixup, 4> Fixups;
 
+  printf("Emitting SSITHMetadataFnRange\n");
+  
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   MCContext &Ctx = OutContext;
   RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
@@ -130,101 +132,112 @@ void RISCVAsmPrinter::EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
 
+  /* SSITH BEGIN */
+  MCSymbol *InstSym, *PriorInstSym;
+  InstSym = PriorInstSym = nullptr;
+
   // Do any auto-generated pseudo lowerings.
   if (!emitPseudoExpansionLowering(*OutStreamer, MI)){
     MCInst TmpInst;
     LowerRISCVMachineInstrToMCInst(MI, TmpInst, *this);
     EmitToStreamer(*OutStreamer, TmpInst);
   }
+  else
+    printf("did not go into lowerriscv machine instr\n");
 
-  /* SSITH BEGIN */
-  MCSymbol *InstSym, *PriorInstSym;
-  InstSym = PriorInstSym = nullptr;
-
-  char *tmp = OutStreamer->SSITHpopLastInstruction(4);
-  InstSym = OutContext.createTempSymbol();
-  OutStreamer->EmitLabel(InstSym);
+  //  char *tmp = OutStreamer->SSITHpopLastInstruction(4);
+  //  InstSym = OutContext.createTempSymbol();
+  //  OutStreamer->EmitLabel(InstSym);
   //These get expanded to 2 instructions -- can you believe it! They aren't butter! 
   //they are whatever the fake butter product in those ads was called ...
-  if(MI->getOpcode() == RISCV::PseudoTAIL ||
-      MI->getOpcode() == RISCV::PseudoCALL){
-    char *tmp2 = OutStreamer->SSITHpopLastInstruction(4);
-    PriorInstSym = OutContext.createTempSymbol();
-    OutStreamer->EmitLabel(PriorInstSym);
-    OutStreamer->SSITHpushInstruction(tmp2, 4);
-  }
-  OutStreamer->SSITHpushInstruction(tmp, 4);
+  //  if(MI->getOpcode() == RISCV::PseudoTAIL ||
+  //     MI->getOpcode() == RISCV::PseudoCALL){
+    //    char *tmp2 = OutStreamer->SSITHpopLastInstruction(4);
+    //    PriorInstSym = OutContext.createTempSymbol();
+    //    OutStreamer->EmitLabel(PriorInstSym);
+    //    OutStreamer->SSITHpushInstruction(tmp2, 4);
+  //  }
+  //  OutStreamer->SSITHpushInstruction(tmp, 4);
+//   #if 0
+//   bool retTarget = false;
+//   bool branchFallThrough = false;
+
+//   const MachineBasicBlock *MBB = MI->getParent();
+//   if(MI == MBB->getFirstNonDebugInstr()){
+//     for(auto &pred : MBB->predecessors()){
+//       const auto &last = pred->getLastNonDebugInstr();
+//       if(last != pred->end()) {
+//         if(last->isCall())
+//             retTarget = true;
+//         if(last->isBranch())
+//             branchFallThrough = true;
+//       }
+//     }
+//   }
+//   else{
+//     for(auto &MI2 : *(MBB)){
+//       if(&MI2 == MI) 
+//         break;
   
-  bool retTarget = false;
-  bool branchFallThrough = false;
+//       //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
+//       //wasn't obvious how to call it, so here's this unmaintable approach
+//       switch(MI2.getOpcode()){
+//         case TargetOpcode::EH_LABEL:
+//         case TargetOpcode::IMPLICIT_DEF:
+//         case TargetOpcode::KILL:
+//         case TargetOpcode::DBG_VALUE:
+//           continue;
+//         default:  //do nothing
+//           break;  //breaks the switch not the loop
+//       }
 
-  const MachineBasicBlock *MBB = MI->getParent();
-  if(MI == MBB->getFirstNonDebugInstr()){
-    for(auto &pred : MBB->predecessors()){
-      const auto &last = pred->getLastNonDebugInstr();
-      if(last != pred->end()) {
-        if(last->isCall())
-            retTarget = true;
-        if(last->isBranch())
-            branchFallThrough = true;
-      }
-    }
-  }
-  else{
-    for(auto &MI2 : *(MBB)){
-      if(&MI2 == MI) 
-        break;
-  
-      //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
-      //wasn't obvious how to call it, so here's this unmaintable approach
-      switch(MI2.getOpcode()){
-        case TargetOpcode::EH_LABEL:
-        case TargetOpcode::IMPLICIT_DEF:
-        case TargetOpcode::KILL:
-        case TargetOpcode::DBG_VALUE:
-          continue;
-        default:  //do nothing
-          break;  //breaks the switch not the loop
-      }
+//       if(MI2.isCall())
+//         retTarget = true;
+//       else
+//         retTarget = false;
 
-      if(MI2.isCall())
-        retTarget = true;
-      else
-        retTarget = false;
-
-      if(MI2.isBranch())
-        branchFallThrough = true;
-      else
-        branchFallThrough = false;
-    }
-  }
-
+//       if(MI2.isBranch())
+//         branchFallThrough = true;
+//       else
+//         branchFallThrough = false;
+//     }
+//   }
+// #endif
   //whether its a tail call or a return (handled separately above) do this
-  if(MI->isReturn())
-    EmitSSITHMetadataFnRange(CurrentFnSym, InstSym);
+  //  InstSym = OutContext.createTempSymbol();
+  //  if(MI->isReturn())
+  //    EmitSSITHMetadataFnRange(CurrentFnSym, InstSym);
 
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
     //Emit the metadata 
-    MCSymbol *CurPos = OutContext.createTempSymbol();
-    OutStreamer->EmitLabel(CurPos);
-    EmitSSITHMetadata(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
-
+    //    MCSymbol *CurPos = OutContext.createTempSymbol();
+    //    OutStreamer->EmitLabel(CurPos);
+    //    EmitSSITHMetadata(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
+    //    MI->setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
+    
     //Emit our new store
     MCInst SSITHStore;
     LowerToSSITHEpilogStore(MI, SSITHStore, *this);
     EmitToStreamer(*OutStreamer, SSITHStore);
   }
-  
-  //Targets can also be other things, need a separate if check
-  if(retTarget){
-    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadata(Tgt, DMT_RET_VALID_TGT);
-  }
-  else if(branchFallThrough){
-    MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
-    EmitSSITHMetadata(Tgt, DMT_BRANCH_VALID_TGT);
-  }
+// #if 0 
+//   //Targets can also be other things, need a separate if check
+//   if(retTarget){
+//     MI->setFlag(MachineInstr::ReturnTarget);
+//     //    if ( PriorInstSym ) 
+//     //      EmitSSITHMetadata(PriorInstSym, DMT_RET_VALID_TGT);
+//     //    else
+//     //      MI->setISPMetadataTag(DMT_RET_VALID_TGT);
+//   }
+//   else if(branchFallThrough){
+//     MI->setFlag(MachineInstr::BranchTarget);
+//     //    if ( PriorInstSym ) 
+//     //      EmitSSITHMetadata(PriorInstSym, DMT_BRANCH_VALID_TGT);
+//     //    else
+//     //      MI->setISPMetadataTag(DMT_BRANCH_VALID_TGT);
+//   }
+// #endif
   
 }
 
