@@ -42,12 +42,15 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
   for (auto &MBB : MF) {
 
+    // check first instruction
+    auto MI = MBB.getFirstNonDebugInstr();
+    if ( MI == MBB.end() )
+      continue;
+
     MBB.getSymbol()->setISPMetadataTag(&MBB == &*MF.begin() ?
 				       DMT_CFI3L_VALID_TGT :
 				       DMT_BRANCH_VALID_TGT);
-    
-    // check first instruction
-    auto MI = MBB.getFirstNonDebugInstr();
+
     for(auto &pred : MBB.predecessors()){
       const auto &last = pred->getLastNonDebugInstr();
       if(last != pred->end()) {
@@ -60,6 +63,7 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
     }
 
     // check all other instructions
+    auto last = MI;
     for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
 
       //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
@@ -74,12 +78,13 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
           break;  //breaks the switch not the loop
       }
 
-      // todo: prev may be one of these weird zero size instructions
-      if(std::prev(MI)->isCall())
+      if(last->isCall())
 	MI->setFlag(MachineInstr::ReturnTarget);
 
-      if(std::prev(MI)->isBranch())
+      if(last->isBranch())
 	MI->setFlag(MachineInstr::BranchTarget);
+
+      last = MI;
     }
   }
 

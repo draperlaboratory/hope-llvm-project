@@ -177,11 +177,6 @@ void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
   const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
   //  ME = RISCVMCExpr::create(ME, Kind, es->getContext());
 
-  if ( Sym->containsISPMetadataTag(DMT_CALL_INSTR) ) {
-    printf("MEDEBUGprint\n");
-    ME->dump();
-  }
-    
   SmallVector<MCFixup, 4> Fixups;  
   Fixups.push_back(
 		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));

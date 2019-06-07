@@ -149,7 +149,6 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
   if ( MI->getFlag(MachineInstr::CallTarget) ) {
     OutMI.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
   }
-
   if ( MI->getFlag(MachineInstr::ReturnTarget) ) 
     OutMI.setISPMetadataTag(DMT_RET_VALID_TGT);
 
@@ -157,7 +156,7 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
     OutMI.setISPMetadataTag(DMT_BRANCH_VALID_TGT);    
 
   //return instructions aren't tagged epilog for whatever reason
-  if(MI->isReturn()){
+  if(MI->isReturn() && !MI->isCall()){
 
     printf("found a return instruction!\n");
     
@@ -169,7 +168,7 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
     //    AP.EmitSSITHMetadata(InstSym, DMT_RETURN_INSTR);
   }
   //Tag call instructions for 3 class CFI policy
-  if(MI->isCall()) {
+  else if(MI->isCall()) {
     printf("outputting call instruction!\n");
     OutMI.setISPMetadataTag(DMT_CALL_INSTR);
     //    AP.EmitSSITHMetadata(InstSym, DMT_CALL_INSTR);
