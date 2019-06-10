@@ -108,6 +108,42 @@ bool llvm::LowerRISCVMachineOperandToMCOperand(const MachineOperand &MO,
   return true;
 }
 
+static void MoveMetadataMachineInstrToMCInst(const MachineInstr *MI, MCInst &MC) {
+
+  /* SSITH BEGIN */
+  if(MI->getFlag(MachineInstr::FnProlog))
+    MC.setISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY);
+  else if(MI->getFlag(MachineInstr::FnEpilog))
+    MC.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
+
+  // CPI Tagging 
+  if(MI->getFlag(MachineInstr::FPtrStore))
+    MC.setISPMetadataTag(DMT_FPTR_STORE_AUTHORITY);
+  else if(MI->getFlag(MachineInstr::FPtrCreate))
+    MC.setISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY);
+
+  // threeClass tagging
+  if ( MI->getFlag(MachineInstr::CallTarget) )
+    MC.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
+
+  if ( MI->getFlag(MachineInstr::ReturnTarget) ) 
+    MC.setISPMetadataTag(DMT_RET_VALID_TGT);
+
+  if ( MI->getFlag(MachineInstr::BranchTarget) )
+    MC.setISPMetadataTag(DMT_BRANCH_VALID_TGT);    
+
+  if(MI->isReturn() && !MI->isCall()){
+    //return instructions aren't tagged epilog for whatever reason
+    //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
+    MC.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
+    MC.setISPMetadataTag(DMT_RETURN_INSTR);
+  }
+  else if(MI->isCall())
+    MC.setISPMetadataTag(DMT_CALL_INSTR);
+  else if(MI->isBranch()) 
+    MC.setISPMetadataTag(DMT_BRANCH_INSTR);
+}
+
 void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
                                           AsmPrinter &AP) {
   OutMI.setOpcode(MI->getOpcode());
@@ -118,67 +154,7 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
       OutMI.addOperand(MCOp);
   }
 
-  // BEGIN SSITH
-
-  /* SSITH BEGIN */
-  MCSymbol *InstSym;
-  InstSym  = nullptr;
-
-  const std::unique_ptr<MCStreamer> &OutStreamer = AP.OutStreamer;
-  MCContext &OutContext = AP.OutContext;
-  
-  if(MI->getFlag(MachineInstr::FnProlog)) {
-    OutMI.setISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_PROLOGUE_AUTHORITY);
-  }
-  else if(MI->getFlag(MachineInstr::FnEpilog)){
-    OutMI.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
-  }
-  else if(MI->getFlag(MachineInstr::FPtrStore)){
-    OutMI.setISPMetadataTag(DMT_FPTR_STORE_AUTHORITY);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_FPTR_STORE_AUTHORITY);
-  }
-  else if(MI->getFlag(MachineInstr::FPtrCreate)){
-    //MI->dump();
-    //errs() << "create\n--------------------\n";
-    OutMI.setISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_FPTR_CREATE_AUTHORITY);
-  }
-
-  if ( MI->getFlag(MachineInstr::CallTarget) ) {
-    OutMI.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
-  }
-  if ( MI->getFlag(MachineInstr::ReturnTarget) ) 
-    OutMI.setISPMetadataTag(DMT_RET_VALID_TGT);
-
-  if ( MI->getFlag(MachineInstr::BranchTarget) )
-    OutMI.setISPMetadataTag(DMT_BRANCH_VALID_TGT);    
-
-  //return instructions aren't tagged epilog for whatever reason
-  if(MI->isReturn() && !MI->isCall()){
-
-    printf("found a return instruction!\n");
-    
-    OutMI.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
-    OutMI.setISPMetadataTag(DMT_RETURN_INSTR);
-
-    //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
-    //    AP.EmitSSITHMetadata(InstSym, DMT_STACK_EPILOGUE_AUTHORITY);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_RETURN_INSTR);
-  }
-  //Tag call instructions for 3 class CFI policy
-  else if(MI->isCall()) {
-    printf("outputting call instruction!\n");
-    OutMI.setISPMetadataTag(DMT_CALL_INSTR);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_CALL_INSTR);
-  }
-  //Tag branch instruction for 3 class CFI policy
-  else if(MI->isBranch()) {
-    OutMI.setISPMetadataTag(DMT_BRANCH_INSTR);
-    //    AP.EmitSSITHMetadata(InstSym, DMT_BRANCH_INSTR);
-  }
-
+  MoveMetadataMachineInstrToMCInst(MI, OutMI);
 }
 
 void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
@@ -195,4 +171,6 @@ void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
     else if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
       OutMI.addOperand(MCOp);
   }
+
+  MoveMetadataMachineInstrToMCInst(MI, OutMI);
 }

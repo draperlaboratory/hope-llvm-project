@@ -169,9 +169,6 @@ static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
 
 void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
 
-  if ( i == 2 || i == 3 || i == 4 || i == 10 )
-    return;
-  
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   //  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
   const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
@@ -186,31 +183,12 @@ void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
 
 void MCELFStreamer::tempEmitSSITHMetadata(const MCInst &Inst, int i) {
 
-  if ( i == 2 || i == 3 || i == 4 || i == 10 )
-    return;
-  
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   MCSymbol *InstSym = getContext().createTempSymbol();
 
-  printf("creating temp symbol\n");
-  
   InstSym->setISPMetadataTag(i);
   
   EmitLabel(InstSym);
-
-  printf("done creating temp symbol\n");
-  //  const MCExpr *ME = MCSymbolRefExpr::create(InstSym, MCSymbolRefExpr::VK_None, getContext());
-
-  //  if ( Inst.containsISPMetadataTag(DMT_CALL_INSTR) ) {
-//    printf("MEDEBUGprint\n");
-//    ME->dump();
-//  }
-  
-//  SmallVector<MCFixup, 4> Fixups;  
-//  Fixups.push_back(
-//		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
-
-//  EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
 }
 
 void MCELFStreamer::InitSections(bool NoExecStack) {
