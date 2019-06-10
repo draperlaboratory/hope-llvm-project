@@ -47,6 +47,11 @@ MCTargetStreamer::~MCTargetStreamer() = default;
 
 void MCTargetStreamer::emitLabel(MCSymbol *Symbol) {}
 
+void MCTargetStreamer::emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) {}
+
+void MCTargetStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+					unsigned ByteAlignment) {}
+
 void MCTargetStreamer::finish() {}
 
 void MCTargetStreamer::changeSection(const MCSection *CurSection,
@@ -347,6 +352,15 @@ void MCStreamer::AssignFragment(MCSymbol *Symbol, MCFragment *Fragment) {
   // be sorted upon later. Zero is reserved to mean 'unemitted'.
   SymbolOrdering[Symbol] = 1 + SymbolOrdering.size();
 }
+
+void MCStreamer::EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+				  unsigned ByteAlignment) {
+  MCTargetStreamer *TS = getTargetStreamer();
+  if (TS)
+    TS->emitCommonSymbol(Symbol, Size, ByteAlignment);  
+}
+  
+
 
 void MCStreamer::EmitLabel(MCSymbol *Symbol, SMLoc Loc) {
   Symbol->redefineIfPossible();
@@ -957,11 +971,15 @@ void MCStreamer::visitUsedExpr(const MCExpr &Expr) {
   }
 }
 
-void MCStreamer::EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &) {
+void MCStreamer::EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) {
   // Scan for values.
   for (unsigned i = Inst.getNumOperands(); i--;)
     if (Inst.getOperand(i).isExpr())
       visitUsedExpr(*Inst.getOperand(i).getExpr());
+
+  MCTargetStreamer *TS = getTargetStreamer();
+  if (TS)
+    TS->emitInstruction(Inst, STI);
 }
 
 void MCStreamer::emitAbsoluteSymbolDiff(const MCSymbol *Hi, const MCSymbol *Lo,

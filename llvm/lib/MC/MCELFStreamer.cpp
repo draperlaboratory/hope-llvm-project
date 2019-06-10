@@ -10,7 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/MC/MCELFStreamer.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
@@ -44,7 +43,7 @@ MCELFStreamer::MCELFStreamer(MCContext &Context,
                              std::unique_ptr<MCObjectWriter> OW,
                              std::unique_ptr<MCCodeEmitter> Emitter)
     : MCObjectStreamer(Context, std::move(TAB), std::move(OW),
-                       std::move(Emitter)) { ISPSecInitialized = false; }
+                       std::move(Emitter)) {}
 
 bool MCELFStreamer::isBundleLocked() const {
   return getCurrentSectionOnly()->isBundleLocked();
@@ -88,64 +87,8 @@ void MCELFStreamer::mergeFragment(MCDataFragment *DF,
   DF->getContents().append(EF->getContents().begin(), EF->getContents().end());
 }
 
-//SSITH Addition
-static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
-
-  SmallString<256> Code;
-  raw_svector_ostream VecOS(Code);
-
-  printf("emitting metadata header!\n");
-  
-  //Emit the Metadata tag
-  uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
-  support::endian::write(VecOS, MD, support::little);
-
-  uint64_t Base = 0u;
-  support::endian::write(VecOS, Base, support::little);
-
-  MCDataFragment *DF = Streamer->getOrCreateDataFragment();
-  DF->getContents().append(Code.begin(), Code.end());
-
-  Streamer->ISPSecInitialized = true;
-}
-
-void MCELFStreamer::EmitMCSymbolMetadata(MCSymbol *Sym) {
-
-  if ( !Sym->containsISPMetadata() )
-    return;
-
-  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
-  //  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
-  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
-  //  ME = RISCVMCExpr::create(ME, Kind, es->getContext());
-
-  SmallVector<MCFixup, 4> Fixups;  
-  Fixups.push_back(
-		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
-
-  // todo get rid of magic number
-  for ( int i = 1; i <= 11; i++ )
-    if ( Sym->containsISPMetadataTag(i) )
-      EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
-}
-
-void MCELFStreamer::EmitMCInstMetadata(const MCInst &Inst) {
-
-  if ( !Inst.containsISPMetadata() )
-    return;
-  
-  // todo get rid of magic number 
-  for ( int i = 1; i <= 11; i++ )
-    if ( Inst.containsISPMetadataTag(i) ) {
-      MCSymbol *InstSym = getContext().createTempSymbol();
-      InstSym->setISPMetadataTag(i);
-      EmitLabel(InstSym);
-    }
-}
-
 void MCELFStreamer::InitSections(bool NoExecStack) {
   MCContext &Ctx = getContext();
-
   SwitchSection(Ctx.getObjectFileInfo()->getTextSection());
   EmitCodeAlignment(4);
 
@@ -157,8 +100,6 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc);
 
-  EmitMCSymbolMetadata(S);
-  
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
   if (Section.getFlags() & ELF::SHF_TLS)
@@ -169,8 +110,6 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc, MCFragment *F) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc, F);
 
-  EmitMCSymbolMetadata(S);
-    
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
   if (Section.getFlags() & ELF::SHF_TLS)
@@ -348,7 +287,7 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
-  EmitMCSymbolMetadata(S);
+  MCObjectStreamer::EmitCommonSymbol(S, Size, ByteAlignment);
 
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
@@ -394,7 +333,6 @@ void MCELFStreamer::emitELFSymverDirective(StringRef AliasName,
 void MCELFStreamer::EmitLocalCommonSymbol(MCSymbol *S, uint64_t Size,
                                           unsigned ByteAlignment) {
   auto *Symbol = cast<MCSymbolELF>(S);
-
   // FIXME: Should this be caught and done earlier?
   getAssembler().registerSymbol(*Symbol);
   Symbol->setBinding(ELF::STB_LOCAL);
@@ -555,70 +493,11 @@ void MCELFStreamer::finalizeCGProfile() {
 
 void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
                                        const MCSubtargetInfo &STI) {
-
-  EmitMCInstMetadata(Inst);
-
   this->MCObjectStreamer::EmitInstToFragment(Inst, STI);
   MCRelaxableFragment &F = *cast<MCRelaxableFragment>(getCurrentFragment());
 
   for (unsigned i = 0, e = F.getFixups().size(); i != e; ++i)
     fixSymbolsInTLSFixups(F.getFixups()[i].getValue());
-}
-
-//SSITH Addition
-void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
-					       uint8_t MD_type, uint8_t tag){
-  SmallString<256> Code;
-  raw_svector_ostream VecOS(Code);
-  MCDataFragment *DF;
-
-  bool switchSection = false;
-  
-  printf("EMITMETADTA %d\n", tag);
-  
-  const auto ISPMetadataSection =
-    getContext().getObjectFileInfo()->getISPMetadataSection();
-
-  if ( getCurrentSectionOnly() != ISPMetadataSection ) {
-    switchSection = true;
-    PushSection();
-    SwitchSection(ISPMetadataSection);
-  }
-
-  if ( !ISPSecInitialized ) 
-    EmitSSITHMetadataHeader(this);
-  
-  // Emit the Metadata tag
-  assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
-  uint8_t MD = MD_type;
-  support::endian::write(VecOS, MD, support::little);
-  
-  //Our placeholder 0 bytes for the relative address
-  uint32_t Bits = 0;
-  support::endian::write(VecOS, Bits, support::little);
- 
-  if(MD_type == DMD_FUNCTION_RANGE)
-    support::endian::write(VecOS, Bits, support::little);
-  
-  //The metadata tag specifier
-  if(MD_type != DMD_FUNCTION_RANGE){
-    assert(tag && 
-        "[SSITH Error] Must have a non null tag for op types other than function range");
-    MD = tag;
-    support::endian::write(VecOS, MD, support::little);
-  }
-
-  DF = getOrCreateDataFragment();
-  // Add the fixup and data.
-  for(unsigned i = 0; i < Fixups.size(); i++){
-    //hack this to account for the prologue byte
-    Fixups[i].setOffset(Fixups[i].getOffset() + DF->getContents().size() + 1 + i*4);
-    DF->getFixups().push_back(Fixups[i]);
-  }
-  DF->getContents().append(Code.begin(), Code.end());
-
-  if ( switchSection )
-    PopSection();
 }
 
 // A fragment can only have one Subtarget, and when bundling is enabled we
@@ -638,8 +517,6 @@ void MCELFStreamer::EmitInstToData(const MCInst &Inst,
   raw_svector_ostream VecOS(Code);
   Assembler.getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
 
-  EmitMCInstMetadata(Inst);
-  
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i)
     fixSymbolsInTLSFixups(Fixups[i].getValue());
 

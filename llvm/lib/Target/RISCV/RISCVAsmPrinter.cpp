@@ -14,6 +14,7 @@
 #include "RISCV.h"
 #include "InstPrinter/RISCVInstPrinter.h"
 #include "MCTargetDesc/RISCVMCExpr.h"
+#include "MCTargetDesc/RISCVELFStreamer.h"
 #include "RISCVTargetMachine.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
@@ -110,7 +111,7 @@ void RISCVAsmPrinter::EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end){
       MCFixup::create(0, MEend, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
   OutStreamer->EmitLabel(end);
-  OutStreamer->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
+  ((RISCVTargetELFStreamer*)(OutStreamer->getTargetStreamer()))->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
 void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
@@ -130,12 +131,6 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
 
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
-    //Emit the metadata 
-    //    MCSymbol *CurPos = OutContext.createTempSymbol();
-    //    OutStreamer->EmitLabel(CurPos);
-    //    EmitSSITHMetadata(CurPos, DMT_STACK_EPILOGUE_AUTHORITY);
-    //    MI->setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
-    
     //Emit our new store
     MCInst SSITHStore;
     LowerToSSITHEpilogStore(MI, SSITHStore, *this);

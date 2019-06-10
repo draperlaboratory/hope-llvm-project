@@ -19,12 +19,31 @@ public:
   MCELFStreamer &getStreamer();
   RISCVTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
 
-  virtual void emitDirectiveOptionPush();
-  virtual void emitDirectiveOptionPop();
-  virtual void emitDirectiveOptionRVC();
-  virtual void emitDirectiveOptionNoRVC();
-  virtual void emitDirectiveOptionRelax();
-  virtual void emitDirectiveOptionNoRelax();
+  virtual void emitDirectiveOptionPush()    override;
+  virtual void emitDirectiveOptionPop()     override;
+  virtual void emitDirectiveOptionRVC()     override;
+  virtual void emitDirectiveOptionNoRVC()   override;
+  virtual void emitDirectiveOptionRelax()   override;
+  virtual void emitDirectiveOptionNoRelax() override;
+
+  virtual void emitLabel(MCSymbol *Symbol) override;
+  virtual void emitInstruction(const MCInst &Inst, const MCSubtargetInfo &) override;
+  virtual void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+				unsigned ByteAlignment) override;
+
+  
+  void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+			      uint8_t MD_type, uint8_t tag);
+  
+private:
+
+  bool ISPSecInitialized = false;
+
+  void EmitMCSymbolMetadata(MCSymbol *Sym);
+  void EmitMCInstMetadata(const MCInst &Inst);
+
+  void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end);
+  void EmitSSITHMetadataHeader(MCObjectStreamer &Streamer);
 };
 }
 #endif

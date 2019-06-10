@@ -126,17 +126,18 @@ static void MoveMetadataMachineInstrToMCInst(const MachineInstr *MI, MCInst &MC)
   if ( MI->getFlag(MachineInstr::CallTarget) )
     MC.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
 
-  if ( MI->getFlag(MachineInstr::ReturnTarget) ) 
+  if ( MI->getFlag(MachineInstr::ReturnTarget) )
     MC.setISPMetadataTag(DMT_RET_VALID_TGT);
 
   if ( MI->getFlag(MachineInstr::BranchTarget) )
-    MC.setISPMetadataTag(DMT_BRANCH_VALID_TGT);    
+    MC.setISPMetadataTag(DMT_BRANCH_VALID_TGT);
 
   if(MI->isReturn() && !MI->isCall()){
     //return instructions aren't tagged epilog for whatever reason
     //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
     MC.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
     MC.setISPMetadataTag(DMT_RETURN_INSTR);
+    //    MC.setISPSym((void*)&AP.CurrentFnSym);
   }
   else if(MI->isCall())
     MC.setISPMetadataTag(DMT_CALL_INSTR);

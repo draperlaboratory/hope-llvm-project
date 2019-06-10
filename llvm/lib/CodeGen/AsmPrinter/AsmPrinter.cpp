@@ -442,35 +442,6 @@ MCSymbol *AsmPrinter::getSymbol(const GlobalValue *GV) const {
   return TM.getSymbol(GV);
 }
 
-static void ispdebugsymbol(MCSymbol *S, char *str) {
-
-  printf("%s: ispdebugsymbol\n", str);
-  
-  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
-    printf("  found DMT_CFI3L_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
-    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
-    printf("  found DMT_BRANCH_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
-    printf("  found DMT_RET_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
-    printf("  found DMT_RETURN_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
-    printf("  found DMT_CALL_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
-    printf("  found DMT_BRANCH_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
-    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
-    printf("  found DMT_WRITE_ONCE\n");
-  
-}
-
 /// EmitGlobalVariable - Emit the specified global variable to the .s file.
 void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   bool IsEmuTLSVar = TM.useEmulatedTLS() && GV->isThreadLocal();
@@ -483,7 +454,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
     return;
 
   if (GV->hasInitializer()) {
-
     // Check to see if this is a special global used by LLVM, if so, emit it.
     if (EmitSpecialLLVMGlobal(GV))
       return;
@@ -494,7 +464,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
       return;
 
     if (isVerbose()) {
-
       // When printing the control variable __emutls_v.*,
       // we don't need to print the original TLS variable name.
       GV->printAsOperand(OutStreamer->GetCommentOS(),
@@ -513,12 +482,12 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
     else
       printf("TODO ACTUAL LLVM WARNING\n"); // TODO
   }
-  
+
   // getOrCreateEmuTLSControlSym only creates the symbol with name and default
   // attributes.
   // GV's or GVSym's attributes will be used for the EmittedSym.
   EmitVisibility(EmittedSym, GV->getVisibility(), !GV->isDeclaration());
-  
+
   if (!GV->hasInitializer())   // External globals require no extra code.
     return;
 
@@ -529,7 +498,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   if (MAI->hasDotTypeDotSizeDirective())
     OutStreamer->EmitSymbolAttribute(EmittedSym, MCSA_ELF_TypeObject);
-  
+
   SectionKind GVKind = TargetLoweringObjectFile::getKindForGlobal(GV, TM);
 
   const DataLayout &DL = GV->getParent()->getDataLayout();
@@ -566,12 +535,10 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   // zerofill directive, do so here.
   if (GVKind.isBSS() && MAI->hasMachoZeroFillDirective() &&
       TheSection->isVirtualSection()) {
-
     if (Size == 0)
       Size = 1; // zerofill of 0 bytes is undefined.
     unsigned Align = 1 << AlignLog;
     EmitLinkage(GV, GVSym);
-
     // .zerofill __DATA, __bss, _foo, 400, 5
     OutStreamer->EmitZerofill(TheSection, GVSym, Size, Align);
     return;
@@ -581,7 +548,6 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
   // section use .lcomm/.comm directive.
   if (GVKind.isBSSLocal() &&
       getObjFileLowering().getBSSSection() == TheSection) {
-
     if (Size == 0)
       Size = 1; // .comm Foo, 0 is undefined, avoid it.
     unsigned Align = 1 << AlignLog;
@@ -1081,33 +1047,15 @@ void AsmPrinter::EmitFunctionBody() {
   // Print out code for the function.
   bool HasAnyRealCode = false;
   int NumInstsInFunction = 0;
-
-  //MF->dump();
-  //errs() << "\n\n";
-
   for (auto &MBB : *MF) {
     // Print a label for the basic block.
     EmitBasicBlockStart(MBB);
-   
-    //MBB.getSymbol()->dump();
-    //MBB.dump();
-    
     for (auto &MI : MBB) {
+      // Print the assembly for the instruction.
       if (!MI.isPosition() && !MI.isImplicitDef() && !MI.isKill() &&
           !MI.isDebugInstr()) {
         HasAnyRealCode = true;
         ++NumInstsInFunction;
-        //SSITH
-	//        if(NumInstsInFunction == 1){
-	  //	  EmitSSITHMetadata(CurrentFnSym, DMT_CFI3L_VALID_TGT);
-	  //MI.setFlag(MachineInstr::CallTarget);
-	  //	  MI.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
-	  //	  CurrentFnSym->setISPMetadataTag(DMT_CFI3L_VALID_TGT);
-	//	  printf("tracking firstinstr in basicblock\n");
-
-	//	  if (MI.getPreInstrSymbol())
-	//	    printf("shit has a pre-instr symbol\n");
-	//	}
       }
 
       // If there is a pre-instruction symbol, emit a label for it here.
@@ -1180,7 +1128,6 @@ void AsmPrinter::EmitFunctionBody() {
 
     EmitBasicBlockEnd(MBB);
   }
-
 
   EmittedInsts += NumInstsInFunction;
   MachineOptimizationRemarkAnalysis R(DEBUG_TYPE, "InstructionCount",
@@ -1521,7 +1468,6 @@ bool AsmPrinter::doFinalization(Module &M) {
     }
   }
 
-  
   // Finalize debug and EH information.
   for (const HandlerInfo &HI : Handlers) {
     NamedRegionTimer T(HI.TimerName, HI.TimerDescription, HI.TimerGroupName,
@@ -1660,7 +1606,7 @@ bool AsmPrinter::doFinalization(Module &M) {
       }
     }
   }
-  
+
   if (TM.Options.EmitAddrsig) {
     // Emit address-significance attributes for all globals.
     OutStreamer->EmitAddrsig();

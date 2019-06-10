@@ -79,17 +79,11 @@ public:
   void EmitBundleAlignMode(unsigned AlignPow2) override;
   void EmitBundleLock(bool AlignToEnd) override;
   void EmitBundleUnlock() override;
-
+  
 private:
   bool isBundleLocked() const;
   void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &) override;
-  void EmitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;
-  
-  //SSITH
-  void EmitMCSymbolMetadata(MCSymbol *Sym);
-  void EmitMCInstMetadata(const MCInst &Inst);
-  void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
-                              uint8_t MD_type, uint8_t tag) override;
+  void EmitInstToData(const MCInst &Inst, const MCSubtargetInfo &) override;  
 
   void fixSymbolsInTLSFixups(const MCExpr *expr);
   void finalizeCGProfileEntry(const MCSymbolRefExpr *&S);
