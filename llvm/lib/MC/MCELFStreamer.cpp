@@ -39,64 +39,6 @@
 
 using namespace llvm;
 
-static void ispdebugsymbol(MCSymbol *S, char *str) {
-
-  printf("%s: ispdebugsymbol\n", str);
-  
-  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
-    printf("  found DMT_CFI3L_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
-    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
-    printf("  found DMT_BRANCH_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
-    printf("  found DMT_RET_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
-    printf("  found DMT_RETURN_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
-    printf("  found DMT_CALL_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
-    printf("  found DMT_BRANCH_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
-    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
-    printf("  found DMT_WRITE_ONCE\n");
-  
-}
-
-static void ispdebugsymbol(const MCInst *S, char *str) {
-
-  printf("%s: ispdebugsymbol\n", str);
-  
-  if ( S->containsISPMetadataTag(DMT_CFI3L_VALID_TGT) )
-    printf("  found DMT_CFI3L_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_PROLOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY) )
-    printf("  found DMT_STACK_EPILOGUE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_STORE_AUTHORITY) )
-    printf("  found DMT_FPTR_STORE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_VALID_TGT) )
-    printf("  found DMT_BRANCH_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RET_VALID_TGT) )
-    printf("  found DMT_RET_VALID_TGT\n");
-  if ( S->containsISPMetadataTag(DMT_RETURN_INSTR) )
-    printf("  found DMT_RETURN_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_CALL_INSTR) )
-    printf("  found DMT_CALL_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_BRANCH_INSTR) )
-    printf("  found DMT_BRANCH_INSTR\n");
-  if ( S->containsISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY) )
-    printf("  found DMT_FPTR_CREATE_AUTHORITY\n");
-  if ( S->containsISPMetadataTag(DMT_WRITE_ONCE) )
-    printf("  found DMT_WRITE_ONCE\n");
-  
-}
-
 MCELFStreamer::MCELFStreamer(MCContext &Context,
                              std::unique_ptr<MCAsmBackend> TAB,
                              std::unique_ptr<MCObjectWriter> OW,
@@ -167,7 +109,10 @@ static void EmitSSITHMetadataHeader(MCELFStreamer *Streamer){
   Streamer->ISPSecInitialized = true;
 }
 
-void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
+void MCELFStreamer::EmitMCSymbolMetadata(MCSymbol *Sym) {
+
+  if ( !Sym->containsISPMetadata() )
+    return;
 
   //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
   //  RISCVMCExpr::VariantKind Kind = RISCVMCExpr::VK_RISCV_None;
@@ -178,17 +123,24 @@ void MCELFStreamer::tempEmitSSITHMetadata(MCSymbol *Sym, int i) {
   Fixups.push_back(
 		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
 
-  EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
+  // todo get rid of magic number
+  for ( int i = 1; i <= 11; i++ )
+    if ( Sym->containsISPMetadataTag(i) )
+      EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, i);
 }
 
-void MCELFStreamer::tempEmitSSITHMetadata(const MCInst &Inst, int i) {
+void MCELFStreamer::EmitMCInstMetadata(const MCInst &Inst) {
 
-  //Make MCExpr for the fixups -- Inspired by LowerSymbolOperand in RISCVMCInstLower.cpp
-  MCSymbol *InstSym = getContext().createTempSymbol();
-
-  InstSym->setISPMetadataTag(i);
+  if ( !Inst.containsISPMetadata() )
+    return;
   
-  EmitLabel(InstSym);
+  // todo get rid of magic number 
+  for ( int i = 1; i <= 11; i++ )
+    if ( Inst.containsISPMetadataTag(i) ) {
+      MCSymbol *InstSym = getContext().createTempSymbol();
+      InstSym->setISPMetadataTag(i);
+      EmitLabel(InstSym);
+    }
 }
 
 void MCELFStreamer::InitSections(bool NoExecStack) {
@@ -205,14 +157,7 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc);
 
-  if ( S->containsISPMetadata() ) {
-    ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S,Loc)");
-    for ( int i = 1; i <= 11; i++ )
-      if ( S->containsISPMetadataTag(i) ) {
-	printf("emitting md from label\n");
-	tempEmitSSITHMetadata(S, i);
-      }
-  }
+  EmitMCSymbolMetadata(S);
   
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
@@ -224,12 +169,7 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc, MCFragment *F) {
   auto *Symbol = cast<MCSymbolELF>(S);
   MCObjectStreamer::EmitLabel(Symbol, Loc, F);
 
-  if ( S->containsISPMetadata() ) {
-    ispdebugsymbol(S, "MCELFStreamer::EmitLabel(S, loc, f)");
-    for ( int i = 1; i <= 11; i++ )
-      if ( S->containsISPMetadataTag(i) )
-	tempEmitSSITHMetadata(S, i);
-  }
+  EmitMCSymbolMetadata(S);
     
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
@@ -310,8 +250,6 @@ static unsigned CombineSymbolTypes(unsigned T1, unsigned T2) {
 bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
   auto *Symbol = cast<MCSymbolELF>(S);
 
-  ispdebugsymbol(S, "MCELFStreamer::EmitSymbolAttribute");
-  
   // Adding a symbol attribute always introduces the symbol, note that an
   // important side effect of calling registerSymbol here is to register
   // the symbol with the assembler.
@@ -410,13 +348,8 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
-  ispdebugsymbol(S, "MCELFStreamer::EmitCommonSymbol");
+  EmitMCSymbolMetadata(S);
 
-  if ( S->containsISPMetadata() )
-    for ( int i = 1; i <= 11; i++ )
-      if ( S->containsISPMetadataTag(i) )
-	tempEmitSSITHMetadata(S, i);
-  
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
     Symbol->setExternal(true);
@@ -461,8 +394,6 @@ void MCELFStreamer::emitELFSymverDirective(StringRef AliasName,
 void MCELFStreamer::EmitLocalCommonSymbol(MCSymbol *S, uint64_t Size,
                                           unsigned ByteAlignment) {
   auto *Symbol = cast<MCSymbolELF>(S);
-
-  ispdebugsymbol(S, "MCELFStreamer::EmitLocalCommonSymbol");
 
   // FIXME: Should this be caught and done earlier?
   getAssembler().registerSymbol(*Symbol);
@@ -625,13 +556,7 @@ void MCELFStreamer::finalizeCGProfile() {
 void MCELFStreamer::EmitInstToFragment(const MCInst &Inst,
                                        const MCSubtargetInfo &STI) {
 
-  if ( Inst.containsISPMetadata() ) {
-    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToFragment");
-    // todo generalize on tagsets
-    for ( int i = 1; i <= 11; i++ )
-      if ( Inst.containsISPMetadataTag(i) )
-	tempEmitSSITHMetadata(Inst, i);
-  }
+  EmitMCInstMetadata(Inst);
 
   this->MCObjectStreamer::EmitInstToFragment(Inst, STI);
   MCRelaxableFragment &F = *cast<MCRelaxableFragment>(getCurrentFragment());
@@ -696,30 +621,6 @@ void MCELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
     PopSection();
 }
 
-//SSITH Addition
-char *MCELFStreamer::SSITHpopLastInstruction(int nbytes){
-  char *buf = new char[4];
-  MCDataFragment *DF = dyn_cast<MCDataFragment>(getCurrentFragment());
-  assert(DF && "[ssith] bad fragment type\n");
-
-  SmallVectorImpl<char> &Contents = DF->getContents();
-  for(int i = 0; i < nbytes; i++)
-    buf[i] = Contents.pop_back_val();
-
-  return buf;
-}
-
-//SSITH Addition
-void MCELFStreamer::SSITHpushInstruction(char *inst, int nbytes){
-  MCDataFragment *DF = dyn_cast<MCDataFragment>(getCurrentFragment());
-  assert(DF && "[ssith] bad fragment type\n");
- 
-  for(int i = nbytes - 1; i >= 0; i--)
-    DF->getContents().push_back(inst[i]);
-  
-  delete inst;
-}
-
 // A fragment can only have one Subtarget, and when bundling is enabled we
 // sometimes need to use the same fragment. We give an error if there
 // are conflicting Subtargets.
@@ -737,13 +638,7 @@ void MCELFStreamer::EmitInstToData(const MCInst &Inst,
   raw_svector_ostream VecOS(Code);
   Assembler.getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
 
-  if ( Inst.containsISPMetadata() ) {
-    ispdebugsymbol(&Inst, "MCELFStreamer::EmitInstToData");
-    for ( int i = 1; i <= 11; i++ ) {
-      if ( Inst.containsISPMetadataTag(i) )
-	tempEmitSSITHMetadata(Inst, i);
-    }
-  }
+  EmitMCInstMetadata(Inst);
   
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i)
     fixSymbolsInTLSFixups(Fixups[i].getValue());
