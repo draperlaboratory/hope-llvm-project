@@ -513,7 +513,7 @@ void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
       MF.createMIExtraInfo(memoperands(), getPreInstrSymbol(), Symbol));
 }
 
-uint32_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
+MachineInstrFlags_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
   // For now, the just return the union of the flags. If the flags get more
   // complicated over time, we might need more logic here.
   return getFlags() | Other.getFlags();
