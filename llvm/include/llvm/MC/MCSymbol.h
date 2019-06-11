@@ -17,7 +17,6 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/MC/MCFragment.h"
-#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include <cassert>
@@ -31,7 +30,7 @@ class MCContext;
 class MCExpr;
 class MCSection;
 class raw_ostream;
-
+  
 /// MCSymbol - Instances of this class represent a symbol name in the MC file,
 /// and MCSymbols are created and uniqued by the MCContext class.  MCSymbols
 /// should only be constructed with valid names for the object file.
@@ -120,12 +119,9 @@ protected:
 
   /// The Flags field is used by object file implementations to store
   /// additional per symbol information which is not easily classified.
-  enum : unsigned { NumFlagsBits = 16 };
+  enum : unsigned { NumFlagsBits = 31 };
   mutable uint32_t Flags : NumFlagsBits;
 
-  // isp metadata recording
-  ISPMetadataTagSet ISPMetadata;
-  
   /// Index field, for use by the object file implementation.
   mutable uint32_t Index = 0;
 
@@ -404,28 +400,7 @@ public:
 
   /// dump - Print the value to stderr.
   void dump() const;
-
-  void setISPMetadataTag(ISPMetadataTag_t t) {
-    ISPMetadata.addISPMetadataTag(t);
-  }
   
-  bool containsISPMetadataTag(ISPMetadataTag_t t) {
-    return ISPMetadata.containsISPMetadataTag(t);
-  }
-
-  bool containsISPMetadata(void) {
-    return ISPMetadata.containsISPMetadata();
-  }
-  
-  void setISPMetadataTagSet(const ISPMetadataTagSet *ts) {
-    ISPMetadata = ts;
-  }
-  
-  const ISPMetadataTagSet *getISPMetadataTagSet(void) const {
-    return &ISPMetadata;
-  }
-  
-protected:
   /// Get the (implementation defined) symbol flags.
   uint32_t getFlags() const { return Flags; }
 
@@ -440,6 +415,15 @@ protected:
     assert(Value < (1U << NumFlagsBits) && "Out of range flags");
     Flags = (Flags & ~Mask) | Value;
   }
+
+  void setFlag(uint32_t Value) const {
+    modifyFlags(Value, 0);
+  }
+
+  bool getFlag(uint32_t Flag) const {
+    return Flags & Flag;
+  }
+
 };
 
 inline raw_ostream &operator<<(raw_ostream &OS, const MCSymbol &Sym) {

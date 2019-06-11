@@ -477,7 +477,7 @@ void AsmPrinter::EmitGlobalVariable(const GlobalVariable *GV) {
 
   if ( GV->hasAttribute(llvm::Attribute::ISPWriteOnce) ) {
     if ( GVSym->isELF() ) {
-      GVSym->setISPMetadataTag(DMT_WRITE_ONCE);
+      GVSym->setFlag(WriteOnceFlagVal);
     }
     else
       printf("TODO ACTUAL LLVM WARNING\n"); // TODO

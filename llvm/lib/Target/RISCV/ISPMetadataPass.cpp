@@ -15,6 +15,7 @@
 
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineInstr.h"
 
 using namespace llvm;
 
@@ -37,18 +38,33 @@ public:
 
 char RISCVISPMetadata::ID = 1;
 
+static void setMIFlags(MachineInstr *MI) {
+
+  if ( MI->isReturn() && !MI->isCall() ) {
+    MI->setFlag(MachineInstr::IsReturn);
+    MI->setFlag(MachineInstr::FnEpilog);
+  }
+  else if ( MI->isCall() )
+    MI->setFlags(MachineInstr::IsCall);
+  else if ( MI->isBranch() )
+    MI->setFlags(MachineInstr::IsBranch);
+  
+}
+  
 bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
   for (auto &MBB : MF) {
 
     // check first instruction
     auto MI = MBB.getFirstNonDebugInstr();
+    setMIFlags(&*MI);
     if ( MI == MBB.end() )
       continue;
 
-    MBB.getSymbol()->setISPMetadataTag(&MBB == &*MF.begin() ?
-				       DMT_CFI3L_VALID_TGT :
-				       DMT_BRANCH_VALID_TGT);
+    MBB.getSymbol()->modifyFlags((&MBB == &*MF.begin() ?
+				  MachineInstr::CallTarget :
+				  MachineInstr::BranchTarget),
+				 0);
 
     for(auto &pred : MBB.predecessors()){
       const auto &last = pred->getLastNonDebugInstr();
@@ -62,9 +78,12 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
     }
 
     // check all other instructions
+    
     auto last = MI;
     for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
 
+      setMIFlags(&*MI);
+      
       //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
       //wasn't obvious how to call it, so here's this unmaintable approach
       switch(MI->getOpcode()){

@@ -108,43 +108,6 @@ bool llvm::LowerRISCVMachineOperandToMCOperand(const MachineOperand &MO,
   return true;
 }
 
-static void MoveMetadataMachineInstrToMCInst(const MachineInstr *MI, MCInst &MC) {
-
-  /* SSITH BEGIN */
-  if(MI->getFlag(MachineInstr::FnProlog))
-    MC.setISPMetadataTag(DMT_STACK_PROLOGUE_AUTHORITY);
-  else if(MI->getFlag(MachineInstr::FnEpilog))
-    MC.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
-
-  // CPI Tagging 
-  if(MI->getFlag(MachineInstr::FPtrStore))
-    MC.setISPMetadataTag(DMT_FPTR_STORE_AUTHORITY);
-  else if(MI->getFlag(MachineInstr::FPtrCreate))
-    MC.setISPMetadataTag(DMT_FPTR_CREATE_AUTHORITY);
-
-  // threeClass tagging
-  if ( MI->getFlag(MachineInstr::CallTarget) )
-    MC.setISPMetadataTag(DMT_CFI3L_VALID_TGT);
-
-  if ( MI->getFlag(MachineInstr::ReturnTarget) )
-    MC.setISPMetadataTag(DMT_RET_VALID_TGT);
-
-  if ( MI->getFlag(MachineInstr::BranchTarget) )
-    MC.setISPMetadataTag(DMT_BRANCH_VALID_TGT);
-
-  if(MI->isReturn() && !MI->isCall()){
-    //return instructions aren't tagged epilog for whatever reason
-    //NOTE -- Tail Calls get labelled as both return and call, we consider them calls
-    MC.setISPMetadataTag(DMT_STACK_EPILOGUE_AUTHORITY);
-    MC.setISPMetadataTag(DMT_RETURN_INSTR);
-    //    MC.setISPSym((void*)&AP.CurrentFnSym);
-  }
-  else if(MI->isCall())
-    MC.setISPMetadataTag(DMT_CALL_INSTR);
-  else if(MI->isBranch()) 
-    MC.setISPMetadataTag(DMT_BRANCH_INSTR);
-}
-
 void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
                                           AsmPrinter &AP) {
   OutMI.setOpcode(MI->getOpcode());
@@ -155,7 +118,7 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
       OutMI.addOperand(MCOp);
   }
 
-  MoveMetadataMachineInstrToMCInst(MI, OutMI);
+  OutMI.setFlags(MI->getFlags());
 }
 
 void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
@@ -173,5 +136,5 @@ void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
       OutMI.addOperand(MCOp);
   }
 
-  MoveMetadataMachineInstrToMCInst(MI, OutMI);
+  OutMI.setFlags(MI->getFlags());
 }

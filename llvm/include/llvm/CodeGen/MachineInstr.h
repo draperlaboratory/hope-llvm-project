@@ -114,7 +114,11 @@ public:
     FPtrCreate   = 1 << 17,             // Instruction creates a function pointer
     CallTarget   = 1 << 18,             // first instruction of a function
     ReturnTarget = 1 << 19,             // first instruction after a call
-    BranchTarget = 1 << 20              // a branch lands here.
+    BranchTarget = 1 << 20,             // a branch lands here.
+    IsCall       = 1 << 21,
+    IsReturn     = 1 << 22,
+    IsBranch     = 1 << 23,
+    MaxFlagShift = 23
   };
 
 private:
