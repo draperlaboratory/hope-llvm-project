@@ -1,4 +1,4 @@
-//===-- RISCVAsmPrinter.cpp - RISCV LLVM assembly writer ------------------===//
+//===-- ISPAsmPrinter.cpp - ISP LLVM assembly writer ----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -18,7 +18,7 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/TargetRegistry.h"
 
-#include "MCTargetDesc/RISCVELFStreamer.h"
+#include "ISP.h"
 
 using namespace llvm;
 
@@ -52,7 +52,7 @@ void ISPAsmPrinter::EmitFnRangeMetadata(MCSymbol *begin, MCSymbol *end){
 
   // TODO: Pointer disasters
   OutStreamer->EmitLabel(end);
-  ((RISCVTargetELFStreamer*)(OutStreamer->getTargetStreamer()))->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
+  ((ISPTargetELFStreamer*)(OutStreamer->getTargetStreamer()))->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
 void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {

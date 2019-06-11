@@ -1,5 +1,6 @@
 add_llvm_library(LLVMRISCVDesc
   RISCVAsmBackend.cpp
+  ../ISPELFStreamer.cpp
   RISCVELFObjectWriter.cpp
   RISCVMCAsmInfo.cpp
   RISCVMCCodeEmitter.cpp
