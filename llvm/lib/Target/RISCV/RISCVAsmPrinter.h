@@ -1,4 +1,4 @@
-//===-- RISCV.h - Top-level interface for RISCV -----------------*- C++ -*-===//
+//===-- RISCVAsmPrinter.h - Top-level interface RISCVAsmPrinter --*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file contains the entry points for global functions defined in the LLVM
-// RISC-V back-end.
+// This file contains the entry points and class definition for the
+//   RISCVAsmPrinter
 //
 //===----------------------------------------------------------------------===//
 
