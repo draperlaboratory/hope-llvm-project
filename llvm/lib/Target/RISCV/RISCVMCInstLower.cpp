@@ -23,9 +23,6 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "llvm/MC/MCStreamer.h"
-#include "llvm/MC/MCContext.h"
-
 
 using namespace llvm;
 
@@ -109,7 +106,7 @@ bool llvm::LowerRISCVMachineOperandToMCOperand(const MachineOperand &MO,
 }
 
 void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
-                                          AsmPrinter &AP) {
+                                          const AsmPrinter &AP) {
   OutMI.setOpcode(MI->getOpcode());
 
   for (const MachineOperand &MO : MI->operands()) {
