@@ -15,11 +15,11 @@ tablegen(LLVM RISCVGenSystemOperands.inc -gen-searchable-tables)
 add_public_tablegen_target(RISCVCommonTableGen)
 
 add_llvm_target(RISCVCodeGen
-  RISCVAsmPrinter.cpp
   ISPAsmPrinter.cpp
   ISPELFStreamer.cpp
+  ISPMetadataPass.cpp
+  RISCVAsmPrinter.cpp
   RISCVExpandPseudoInsts.cpp
-  RISCVISPMetadataPass.cpp
   RISCVFrameLowering.cpp
   RISCVInstrInfo.cpp
   RISCVISelDAGToDAG.cpp

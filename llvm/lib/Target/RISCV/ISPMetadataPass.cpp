@@ -1,4 +1,4 @@
-//===-- RISCVExpandPseudoInsts.cpp - Expand pseudo instructions -----------===//
+//===-- ISPMetadataPass.cpp - Calculate metadata for ISP ------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,9 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file contains a pass that expands pseudo instructions into target
-// instructions. This pass should be run after register allocation but before
-// the post-regalloc scheduling pass.
+// This file contains a pass that identifies and adds metadata to certain
+//   instructions
 //
 //===----------------------------------------------------------------------===//
 
