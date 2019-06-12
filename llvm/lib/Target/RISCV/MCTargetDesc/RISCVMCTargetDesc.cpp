@@ -73,8 +73,12 @@ static MCInstPrinter *createRISCVMCInstPrinter(const Triple &T,
 static MCTargetStreamer *
 createRISCVObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
   const Triple &TT = STI.getTargetTriple();
-  if (TT.isOSBinFormatELF())
-    return new ISPTargetELFStreamer(S, STI);
+  if (TT.isOSBinFormatELF()) {
+    if ( STI.getFeatureBits()[RISCV::FeatureStdExtP] )
+      return new ISPTargetELFStreamer(S, STI);
+    else
+      return new RISCVTargetELFStreamer(S, STI);
+  }
   return nullptr;
 }
 

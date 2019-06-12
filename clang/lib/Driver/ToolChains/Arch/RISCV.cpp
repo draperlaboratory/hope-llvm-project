@@ -345,6 +345,9 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const ArgList &Args,
       case 'c':
         Features.push_back("+c");
         break;
+      case 'p':
+        Features.push_back("+p");
+        break;
       }
     }
 

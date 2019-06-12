@@ -21,6 +21,9 @@
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetOptions.h"
+
+#include "ISP.h"
+
 using namespace llvm;
 
 extern "C" void LLVMInitializeRISCVTarget() {

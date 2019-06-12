@@ -76,7 +76,10 @@ static void LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
 void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   
   RISCVAsmPrinter::EmitInstruction(MI);
-  
+
+  if ( !this->TM.getMCSubtargetInfo()->getFeatureBits()[RISCV::FeatureStdExtP] )
+    return;
+      
   // fn range avoids NoCFI on C code stuff
   // TODO: this may or may not be in the "right" place...
   if(MI->isReturn()) 

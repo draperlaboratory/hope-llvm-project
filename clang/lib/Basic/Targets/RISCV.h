@@ -30,11 +30,12 @@ protected:
   bool HasF;
   bool HasD;
   bool HasC;
+  bool HasP;
 
 public:
   RISCVTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple), HasM(false), HasA(false), HasF(false),
-        HasD(false), HasC(false) {
+        HasD(false), HasC(false), HasP(false) {
     TLSSupported = false;
     LongDoubleWidth = 128;
     LongDoubleAlign = 128;

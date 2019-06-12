@@ -41,6 +41,13 @@ private:
   void EmitSSITHMetadataHeader(MCObjectStreamer &Streamer);
 };
 
+namespace llvm {
+class PassRegistry;
+class FunctionPass;
+  
+FunctionPass *createRISCVISPMetadataPass();
+void initializeRISCVISPMetadataPass(PassRegistry &);
 
+}
 
 #endif

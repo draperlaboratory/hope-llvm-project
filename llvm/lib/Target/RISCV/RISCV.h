@@ -40,9 +40,6 @@ void initializeRISCVMergeBaseOffsetOptPass(PassRegistry &);
 
 FunctionPass *createRISCVExpandPseudoPass();
 void initializeRISCVExpandPseudoPass(PassRegistry &);
-
-FunctionPass *createRISCVISPMetadataPass();
-void initializeRISCVISPMetadataPass(PassRegistry &);
 }
 
 #endif

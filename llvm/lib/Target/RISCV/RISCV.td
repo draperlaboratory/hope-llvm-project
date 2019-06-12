@@ -43,6 +43,12 @@ def FeatureStdExtC
 def HasStdExtC : Predicate<"Subtarget->hasStdExtC()">,
                            AssemblerPredicate<"FeatureStdExtC">;
 
+def FeatureStdExtP
+    : SubtargetFeature<"p", "HasStdExtP", "true",
+                       "'P' (PIPE)">;
+def HasStdExtP : Predicate<"Subtarget->hasStdExtP()">,
+                           AssemblerPredicate<"FeatureStdExtP">;
+
 
 def Feature64Bit
     : SubtargetFeature<"64bit", "HasRV64", "true", "Implements RV64">;

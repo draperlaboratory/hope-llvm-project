@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "RISCV.h"
+#include "ISP.h"
 
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
