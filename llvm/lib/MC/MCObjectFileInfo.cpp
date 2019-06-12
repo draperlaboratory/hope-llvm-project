@@ -18,6 +18,7 @@
 #include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionWasm.h"
+#include "llvm/MC/SSITHMetadata.h"
 
 using namespace llvm;
 
