@@ -360,8 +360,7 @@ void XCoreInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                          unsigned SrcReg, bool isKill,
                                          int FrameIndex,
                                          const TargetRegisterClass *RC,
-                                         const TargetRegisterInfo *TRI, 
-                                         unsigned flag) const
+                                         const TargetRegisterInfo *TRI) const
 {
   DebugLoc DL;
   if (I != MBB.end() && !I->isDebugInstr())
@@ -383,8 +382,7 @@ void XCoreInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator I,
                                           unsigned DestReg, int FrameIndex,
                                           const TargetRegisterClass *RC,
-                                          const TargetRegisterInfo *TRI,
-                                          unsigned flag) const
+                                          const TargetRegisterInfo *TRI) const
 {
   DebugLoc DL;
   if (I != MBB.end() && !I->isDebugInstr())

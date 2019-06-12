@@ -8,18 +8,15 @@
 #ifndef LLVM_MC_MCSYMBOLELF_H
 #define LLVM_MC_MCSYMBOLELF_H
 
-#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/MC/MCSymbol.h"
 
 namespace llvm {
 class MCSymbolELF : public MCSymbol {
-
   /// An expression describing how to calculate the size of a symbol. If a
   /// symbol has no size this field will be NULL.
   const MCExpr *SymbolSize = nullptr;
 
 public:
-
   MCSymbolELF(const StringMapEntry<bool> *Name, bool isTemporary)
       : MCSymbol(SymbolKindELF, Name, isTemporary) {}
   void setSize(const MCExpr *SS) { SymbolSize = SS; }
@@ -45,7 +42,7 @@ public:
 
   void setIsSignature() const;
   bool isSignature() const;
-  
+
   static bool classof(const MCSymbol *S) { return S->isELF(); }
 
 private:

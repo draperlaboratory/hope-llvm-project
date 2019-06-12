@@ -3010,8 +3010,7 @@ void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                        MachineBasicBlock::iterator MI,
                                        unsigned SrcReg, bool isKill, int FrameIdx,
                                        const TargetRegisterClass *RC,
-                                       const TargetRegisterInfo *TRI,
-                                       unsigned flag) const {
+                                       const TargetRegisterInfo *TRI) const {
   const MachineFunction &MF = *MBB.getParent();
   assert(MF.getFrameInfo().getObjectSize(FrameIdx) >= TRI->getSpillSize(*RC) &&
          "Stack slot too small for store");
@@ -3047,8 +3046,7 @@ void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                         MachineBasicBlock::iterator MI,
                                         unsigned DestReg, int FrameIdx,
                                         const TargetRegisterClass *RC,
-                                        const TargetRegisterInfo *TRI,
-                                        unsigned flag) const {
+                                        const TargetRegisterInfo *TRI) const {
   const MachineFunction &MF = *MBB.getParent();
   unsigned Alignment = std::max<uint32_t>(TRI->getSpillSize(*RC), 16);
   bool isAligned =

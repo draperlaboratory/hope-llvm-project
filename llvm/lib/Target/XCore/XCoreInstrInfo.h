@@ -70,15 +70,13 @@ public:
                            MachineBasicBlock::iterator MI,
                            unsigned SrcReg, bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI,
-                           unsigned flags = 0) const override;
+                           const TargetRegisterInfo *TRI) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MI,
                             unsigned DestReg, int FrameIndex,
                             const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI,
-                            unsigned flags = 0) const override;
+                            const TargetRegisterInfo *TRI) const override;
 
   bool reverseBranchCondition(
                           SmallVectorImpl<MachineOperand> &Cond) const override;

@@ -15,7 +15,6 @@
 #ifndef LLVM_CODEGEN_ASMPRINTER_H
 #define LLVM_CODEGEN_ASMPRINTER_H
 
-#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -410,10 +409,6 @@ public:
   virtual void EmitInstruction(const MachineInstr *) {
     llvm_unreachable("EmitInstruction not implemented");
   }
-
-  //SSITH Placeholder, only used by RISCV currently
-  virtual void EmitSSITHMetadata(MCSymbol *Sym, ISPMetadataTag_t tag) {}
-  virtual void EmitSSITHMetadataFnRange(MCSymbol *begin, MCSymbol *end) {}
 
   /// Return the symbol for the specified constant pool entry.
   virtual MCSymbol *GetCPISymbol(unsigned CPID) const;
