@@ -16,7 +16,6 @@ add_public_tablegen_target(RISCVCommonTableGen)
 
 add_llvm_target(RISCVCodeGen
   ISPAsmPrinter.cpp
-  ISPELFStreamer.cpp
   ISPMetadataPass.cpp
   RISCVAsmPrinter.cpp
   RISCVExpandPseudoInsts.cpp

@@ -117,21 +117,3 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
 
   OutMI.setFlags(MI->getFlags());
 }
-
-void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
-                                          const AsmPrinter &AP) {
-  OutMI.setOpcode(RISCV::SW);
-
-  bool first = true;
-  for (const MachineOperand &MO : MI->operands()) {
-    MCOperand MCOp;
-    if(first){
-      OutMI.addOperand(MCOperand::createReg(RISCV::X0));
-      first = false;
-    }
-    else if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
-      OutMI.addOperand(MCOp);
-  }
-
-  OutMI.setFlags(MI->getFlags());
-}

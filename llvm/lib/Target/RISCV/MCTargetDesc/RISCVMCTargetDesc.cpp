@@ -24,7 +24,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/TargetRegistry.h"
 
-#include "../ISP.h"
+#include "ISP.h"
 
 #define GET_INSTRINFO_MC_DESC
 #include "RISCVGenInstrInfo.inc"

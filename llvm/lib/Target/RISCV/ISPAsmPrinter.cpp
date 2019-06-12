@@ -55,6 +55,24 @@ void ISPAsmPrinter::EmitFnRangeMetadata(MCSymbol *begin, MCSymbol *end){
   ((ISPTargetELFStreamer*)(OutStreamer->getTargetStreamer()))->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
+static void LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
+                                          const AsmPrinter &AP) {
+  OutMI.setOpcode(RISCV::SW);
+
+  bool first = true;
+  for (const MachineOperand &MO : MI->operands()) {
+    MCOperand MCOp;
+    if(first){
+      OutMI.addOperand(MCOperand::createReg(RISCV::X0));
+      first = false;
+    }
+    else if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
+      OutMI.addOperand(MCOp);
+  }
+
+  OutMI.setFlags(MI->getFlags());
+}
+
 void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   
   RISCVAsmPrinter::EmitInstruction(MI);
