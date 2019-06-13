@@ -102,6 +102,11 @@ public:
   virtual void emitLabel(MCSymbol *Symbol);
   // Allow a target to add behavior to the emitAssignment of MCStreamer.
   virtual void emitAssignment(MCSymbol *Symbol, const MCExpr *Value);
+  // Allow a target to add behavior to the EmitInstruction of MCStreamer
+  virtual void emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI);
+  // Allow a target to add behavior or the EmitCommonSymbol of MCStreamer
+  virtual void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+				unsigned ByteAlignment);
 
   virtual void prettyPrintAsm(MCInstPrinter &InstPrinter, uint64_t Address,
                               const MCInst &Inst, const MCSubtargetInfo &STI,
@@ -592,7 +597,7 @@ public:
   /// \param ByteAlignment - The alignment of the symbol if
   /// non-zero. This must be a power of 2.
   virtual void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                                unsigned ByteAlignment) = 0;
+                                unsigned ByteAlignment);
 
   /// Emit a local common (.lcomm) symbol.
   ///
