@@ -3022,20 +3022,23 @@ void AsmPrinter::EmitBasicBlockStart(const MachineBasicBlock &MBB) {
     emitBasicBlockLoopComments(MBB, MLI, *this);
   }
 
+  // TODO: condition this on SSITH compilation
   // Print the main label for the block.
-  if (MBB.pred_empty() ||
-      (isBlockOnlyReachableByFallthrough(&MBB) && !MBB.isEHFuncletEntry() &&
-       !MBB.hasLabelMustBeEmitted())) {
-    if (isVerbose()) {
-      // NOTE: Want this comment at start of line, don't emit with AddComment.
-      OutStreamer->emitRawComment(" %bb." + Twine(MBB.getNumber()) + ":",
-                                  false);
-    }
-  } else {
-    if (isVerbose() && MBB.hasLabelMustBeEmitted())
-      OutStreamer->AddComment("Label of block must be emitted");
-    OutStreamer->EmitLabel(MBB.getSymbol());
-  }
+  // if (MBB.pred_empty() ||
+  //     (isBlockOnlyReachableByFallthrough(&MBB) && !MBB.isEHFuncletEntry() &&
+  //      !MBB.hasLabelMustBeEmitted())) {
+  //   if (isVerbose()) {
+  //     // NOTE: Want this comment at start of line, don't emit with AddComment.
+  //     OutStreamer->emitRawComment(" %bb." + Twine(MBB.getNumber()) + ":",
+  //                                 false);
+  //   }
+  // } else {
+  //   if (isVerbose() && MBB.hasLabelMustBeEmitted())
+  //     OutStreamer->AddComment("Label of block must be emitted");
+  //   OutStreamer->EmitLabel(MBB.getSymbol());
+  // }
+  //SSITH - Always label basic block
+  OutStreamer->EmitLabel(MBB.getSymbol());
 }
 
 void AsmPrinter::EmitBasicBlockEnd(const MachineBasicBlock &MBB) {}

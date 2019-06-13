@@ -13,6 +13,7 @@
 #ifndef LLVM_MC_MCSTREAMER_H
 #define LLVM_MC_MCSTREAMER_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
@@ -597,7 +598,7 @@ public:
   /// \param ByteAlignment - The alignment of the symbol if
   /// non-zero. This must be a power of 2.
   virtual void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                                unsigned ByteAlignment);
+                                unsigned ByteAlignment) = 0;
 
   /// Emit a local common (.lcomm) symbol.
   ///
@@ -617,6 +618,10 @@ public:
   virtual void EmitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
                             uint64_t Size = 0, unsigned ByteAlignment = 0,
                             SMLoc Loc = SMLoc()) = 0;
+
+  /// SSITH metadata write - only defined by MCELFStreamer
+  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                                      uint8_t MD_type, uint8_t tag) {}
 
   /// Emit a thread local bss (.tbss) symbol.
   ///
