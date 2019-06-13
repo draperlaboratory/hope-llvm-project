@@ -887,7 +887,8 @@ public:
                                    MachineBasicBlock::iterator MI,
                                    unsigned SrcReg, bool isKill, int FrameIndex,
                                    const TargetRegisterClass *RC,
-                                   const TargetRegisterInfo *TRI) const {
+                                   const TargetRegisterInfo *TRI,
+                                   unsigned flags = 0) const {
     llvm_unreachable("Target didn't implement "
                      "TargetInstrInfo::storeRegToStackSlot!");
   }
@@ -899,7 +900,8 @@ public:
                                     MachineBasicBlock::iterator MI,
                                     unsigned DestReg, int FrameIndex,
                                     const TargetRegisterClass *RC,
-                                    const TargetRegisterInfo *TRI) const {
+                                    const TargetRegisterInfo *TRI,
+                                    unsigned flags = 0) const {
     llvm_unreachable("Target didn't implement "
                      "TargetInstrInfo::loadRegFromStackSlot!");
   }

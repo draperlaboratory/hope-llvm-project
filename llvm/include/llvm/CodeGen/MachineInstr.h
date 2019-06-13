@@ -37,6 +37,8 @@
 
 namespace llvm {
 
+typedef uint32_t MachineInstrFlags_t;
+
 template <typename T> class ArrayRef;
 class DIExpression;
 class DILocalVariable;
@@ -102,8 +104,20 @@ public:
                                         // no unsigned wrap.
     NoSWrap      = 1 << 12,             // Instruction supports binary operator
                                         // no signed wrap.
-    IsExact      = 1 << 13              // Instruction supports division is
-                                        // known to be exact.
+    IsExact      = 1 << 13,              // Instruction supports division is
+    FnProlog     = 1 << 14,             // Instruction is part of the compiler generated
+                                        // prolog
+    FnEpilog     = 1 << 15,             // Instruction is part of the compiler generated
+                                        // epilog
+    FPtrStore    = 1 << 16,             // Instruction writes a function pointer to memory
+    FPtrCreate   = 1 << 17,             // Instruction creates a function pointer
+    CallTarget   = 1 << 18,             // first instruction of a function
+    ReturnTarget = 1 << 19,             // first instruction after a call
+    BranchTarget = 1 << 20,             // a branch lands here.
+    IsCall       = 1 << 21,
+    IsReturn     = 1 << 22,
+    IsBranch     = 1 << 23,
+    MaxFlagShift = 23
   };
 
 private:
@@ -116,7 +130,7 @@ private:
   using OperandCapacity = ArrayRecycler<MachineOperand>::Capacity;
   OperandCapacity CapOperands;          // Capacity of the Operands array.
 
-  uint16_t Flags = 0;                   // Various bits of additional
+  MachineInstrFlags_t Flags = 0;        // Various bits of additional
                                         // information about machine
                                         // instruction.
 
@@ -286,7 +300,7 @@ public:
   }
 
   /// Return the MI flags bitvector.
-  uint16_t getFlags() const {
+  MachineInstrFlags_t getFlags() const {
     return Flags;
   }
 
@@ -297,7 +311,7 @@ public:
 
   /// Set a MI flag.
   void setFlag(MIFlag Flag) {
-    Flags |= (uint16_t)Flag;
+    Flags |= (MachineInstrFlags_t)Flag;
   }
 
   void setFlags(unsigned flags) {
@@ -308,7 +322,7 @@ public:
 
   /// clearFlag - Clear a MI flag.
   void clearFlag(MIFlag Flag) {
-    Flags &= ~((uint16_t)Flag);
+    Flags &= ~((MachineInstrFlags_t)Flag);
   }
 
   /// Return true if MI is in a bundle (but not the first MI in a bundle).
@@ -1551,7 +1565,7 @@ public:
   /// Return the MIFlags which represent both MachineInstrs. This
   /// should be used when merging two MachineInstrs into one. This routine does
   /// not modify the MIFlags of this MachineInstr.
-  uint16_t mergeFlagsWith(const MachineInstr& Other) const;
+  MachineInstrFlags_t mergeFlagsWith(const MachineInstr& Other) const;
 
   static uint16_t copyFlagsFromInstruction(const Instruction &I);
 

@@ -117,7 +117,8 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
     return;
 
   // Allocate space on the stack if necessary.
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize, MachineInstr::FrameSetup);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize, 
+            (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 
   // The frame pointer is callee-saved, and code has been generated for us to
   // save it to the stack. We need to skip over the storing of callee-saved
@@ -131,7 +132,8 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
   // Generate new FP.
   if (hasFP(MF))
     adjustReg(MBB, MBBI, DL, FPReg, SPReg,
-              StackSize - RVFI->getVarArgsSaveSize(), MachineInstr::FrameSetup);
+              StackSize - RVFI->getVarArgsSaveSize(), 
+             (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 }
 
 void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
@@ -158,11 +160,12 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, FPReg,
               -StackSize + RVFI->getVarArgsSaveSize(),
-              MachineInstr::FrameDestroy);
+             (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
   }
 
   // Deallocate stack
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize, MachineInstr::FrameDestroy);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize, 
+            (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
 }
 
 int RISCVFrameLowering::getFrameIndexReference(const MachineFunction &MF,

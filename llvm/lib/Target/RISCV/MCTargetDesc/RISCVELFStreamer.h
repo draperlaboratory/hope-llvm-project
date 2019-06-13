@@ -19,12 +19,12 @@ public:
   MCELFStreamer &getStreamer();
   RISCVTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
 
-  virtual void emitDirectiveOptionPush();
-  virtual void emitDirectiveOptionPop();
-  virtual void emitDirectiveOptionRVC();
-  virtual void emitDirectiveOptionNoRVC();
-  virtual void emitDirectiveOptionRelax();
-  virtual void emitDirectiveOptionNoRelax();
+  virtual void emitDirectiveOptionPush()    override;
+  virtual void emitDirectiveOptionPop()     override;
+  virtual void emitDirectiveOptionRVC()     override;
+  virtual void emitDirectiveOptionNoRVC()   override;
+  virtual void emitDirectiveOptionRelax()   override;
+  virtual void emitDirectiveOptionNoRelax() override;
 };
 }
 #endif

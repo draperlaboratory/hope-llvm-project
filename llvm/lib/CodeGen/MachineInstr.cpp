@@ -513,7 +513,7 @@ void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
       MF.createMIExtraInfo(memoperands(), getPreInstrSymbol(), Symbol));
 }
 
-uint16_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
+MachineInstrFlags_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
   // For now, the just return the union of the flags. If the flags get more
   // complicated over time, we might need more logic here.
   return getFlags() | Other.getFlags();
@@ -1531,6 +1531,26 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "nsw ";
   if (getFlag(MachineInstr::IsExact))
     OS << "exact ";
+  if (getFlag(MachineInstr::FnProlog))
+    OS << "func-prolog ";
+  if (getFlag(MachineInstr::FnEpilog))
+    OS << "func-epilog ";
+  if (getFlag(MachineInstr::FPtrStore))
+    OS << "func-ptr-store ";
+  if (getFlag(MachineInstr::FPtrCreate))
+    OS << "func-ptr-create ";
+  if (getFlag(MachineInstr::CallTarget))
+    OS << "call-target ";
+  if (getFlag(MachineInstr::ReturnTarget))
+    OS << "return-target ";
+  if (getFlag(MachineInstr::BranchTarget))
+    OS << "branch-target ";
+  if (getFlag(MachineInstr::IsCall))
+    OS << "is-call ";
+  if (getFlag(MachineInstr::IsReturn))
+    OS << "is-return ";
+  if (getFlag(MachineInstr::IsBranch))
+    OS << "is-branch ";
 
   // Print the opcode name.
   if (TII)

@@ -39,12 +39,14 @@ public:
                            MachineBasicBlock::iterator MBBI, unsigned SrcReg,
                            bool IsKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           unsigned flags = 0) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MBBI, unsigned DstReg,
                             int FrameIndex, const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            const TargetRegisterInfo *TRI,
+                            unsigned flags = 0) const override;
 
   // Materializes the given int32 Val into DstReg.
   void movImm32(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,

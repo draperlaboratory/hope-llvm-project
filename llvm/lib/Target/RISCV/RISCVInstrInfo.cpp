@@ -109,7 +109,8 @@ void RISCVInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                          MachineBasicBlock::iterator I,
                                          unsigned SrcReg, bool IsKill, int FI,
                                          const TargetRegisterClass *RC,
-                                         const TargetRegisterInfo *TRI) const {
+                                         const TargetRegisterInfo *TRI,
+                                         unsigned flags) const {
   DebugLoc DL;
   if (I != MBB.end())
     DL = I->getDebugLoc();
@@ -129,14 +130,16 @@ void RISCVInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
   BuildMI(MBB, I, DL, get(Opcode))
       .addReg(SrcReg, getKillRegState(IsKill))
       .addFrameIndex(FI)
-      .addImm(0);
+      .addImm(0)
+      .setMIFlags(flags);
 }
 
 void RISCVInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator I,
                                           unsigned DstReg, int FI,
                                           const TargetRegisterClass *RC,
-                                          const TargetRegisterInfo *TRI) const {
+                                          const TargetRegisterInfo *TRI,
+                                          unsigned flags) const {
   DebugLoc DL;
   if (I != MBB.end())
     DL = I->getDebugLoc();
@@ -153,7 +156,7 @@ void RISCVInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
   else
     llvm_unreachable("Can't load this register from stack slot");
 
-  BuildMI(MBB, I, DL, get(Opcode), DstReg).addFrameIndex(FI).addImm(0);
+  BuildMI(MBB, I, DL, get(Opcode), DstReg).addFrameIndex(FI).addImm(0).setMIFlags(flags);
 }
 
 void RISCVInstrInfo::movImm32(MachineBasicBlock &MBB,

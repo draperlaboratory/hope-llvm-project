@@ -212,7 +212,9 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
         << Source.TheDef->getName() << ": {\n"
         << "      MCInst TmpInst;\n"
         << "      MCOperand MCOp;\n"
-        << "      TmpInst.setOpcode(" << Dest.Namespace << "::"
+	<< "      TmpInst.setFlags(MI->getFlags());\n"
+	<< "\n"
+	<< "      TmpInst.setOpcode(" << Dest.Namespace << "::"
         << Dest.TheDef->getName() << ");\n";
 
       // Copy the operands from the source instruction.
