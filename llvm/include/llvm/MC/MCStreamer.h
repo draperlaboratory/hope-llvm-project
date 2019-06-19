@@ -13,6 +13,7 @@
 #ifndef LLVM_MC_MCSTREAMER_H
 #define LLVM_MC_MCSTREAMER_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
@@ -99,7 +100,7 @@ public:
   // Allow a target to add behavior or the EmitCommonSymbol of MCStreamer
   virtual void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
 				unsigned ByteAlignment);
-
+  
   virtual void prettyPrintAsm(MCInstPrinter &InstPrinter, raw_ostream &OS,
                               const MCInst &Inst, const MCSubtargetInfo &STI);
 
@@ -567,7 +568,7 @@ public:
   /// \param ByteAlignment - The alignment of the symbol if
   /// non-zero. This must be a power of 2.
   virtual void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                                unsigned ByteAlignment);
+                                unsigned ByteAlignment) = 0;
 
   /// Emit a local common (.lcomm) symbol.
   ///
@@ -588,6 +589,10 @@ public:
                             uint64_t Size = 0, unsigned ByteAlignment = 0,
                             SMLoc Loc = SMLoc()) = 0;
 
+  /// SSITH metadata write - only defined by MCELFStreamer
+  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                                      uint8_t MD_type, uint8_t tag) {}
+  
   /// Emit a thread local bss (.tbss) symbol.
   ///
   /// \param Section - The thread local common section.
