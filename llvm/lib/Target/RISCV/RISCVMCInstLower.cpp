@@ -123,7 +123,7 @@ void llvm::LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
   for (const MachineOperand &MO : MI->operands()) {
     MCOperand MCOp;
     if(first){
-      OutMI.addOperand(MCOperand::createReg(RISCV::X0));
+      OutMI.addOperand(MCOperand::createReg(RISCV::X1));
       first = false;
     }
     else if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
