@@ -1,12 +1,39 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef BENCHMARK_CONTAINER_BENCHMARKS_HPP
 #define BENCHMARK_CONTAINER_BENCHMARKS_HPP
 
 #include <cassert>
 
+#include "Utilities.hpp"
 #include "benchmark/benchmark.h"
 
 namespace ContainerBenchmarks {
 
+template <class Container>
+void BM_ConstructSize(benchmark::State& st, Container) {
+  auto size = st.range(0);
+  for (auto _ : st) {
+    Container c(size);
+    DoNotOptimizeData(c);
+  }
+}
+
+template <class Container>
+void BM_ConstructSizeValue(benchmark::State& st, Container, typename Container::value_type const& val) {
+  const auto size = st.range(0);
+  for (auto _ : st) {
+    Container c(size, val);
+    DoNotOptimizeData(c);
+  }
+}
 
 template <class Container, class GenInputs>
 void BM_ConstructIterIter(benchmark::State& st, Container, GenInputs gen) {
@@ -16,7 +43,7 @@ void BM_ConstructIterIter(benchmark::State& st, Container, GenInputs gen) {
     benchmark::DoNotOptimize(&in);
     while (st.KeepRunning()) {
         Container c(begin, end);
-        benchmark::DoNotOptimize(c.data());
+        DoNotOptimizeData(c);
     }
 }
 

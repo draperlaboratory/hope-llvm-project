@@ -35,6 +35,7 @@ subdirectories =
  llvm-exegesis
  llvm-extract
  llvm-jitlistener
+ llvm-jitlink
  llvm-link
  llvm-lto
  llvm-mc
@@ -47,6 +48,7 @@ subdirectories =
  llvm-pdbutil
  llvm-profdata
  llvm-rc
+ llvm-reduce
  llvm-rtdyld
  llvm-size
  llvm-split

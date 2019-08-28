@@ -4,7 +4,7 @@
 // RUN:          .callee1 0x100004 : { *(.callee_low) } \
 // RUN:          .caller  0x500000 : { *(.text) } \
 // RUN:          .callee2 0x900004 : { *(.callee_high) } } " > %t.script
-// RUN: ld.lld %t --script %t.script -o %t2 2>&1
+// RUN: ld.lld %t --script %t.script -o %t2
 // RUN: llvm-objdump -d -triple=thumbv6-none-linux-gnueabi %t2 | FileCheck -check-prefix=CHECK-THUMB %s
 // RUN: llvm-objdump -d -triple=armv6-none-linux-gnueabi %t2 | FileCheck -check-prefix=CHECK-ARM %s
 
@@ -28,9 +28,12 @@ _start:
 thumbfunc:
   bx lr
 // CHECK-THUMB: Disassembly of section .callee1:
+// CHECK-THUMB-EMPTY:
 // CHECK-THUMB-NEXT: thumbfunc:
 // CHECK-THUMB-NEXT:   100004:       70 47   bx      lr
+// CHECK-THUMB-EMPTY:
 // CHECK-THUMB-NEXT: Disassembly of section .caller:
+// CHECK-THUMB-EMPTY:
 // CHECK-THUMB-NEXT: _start:
 // CHECK-THUMB-NEXT:   500000:       00 f4 00 f8     bl      #-4194304
 // CHECK-THUMB-NEXT:   500004:       ff f3 fe ef     blx     #4194300
@@ -43,5 +46,6 @@ thumbfunc:
 armfunc:
   bx lr
 // CHECK-ARM: Disassembly of section .callee2:
+// CHECK-ARM-EMPTY:
 // CHECK-ARM-NEXT: armfunc:
 // CHECK-ARM-NEXT:   900004:       1e ff 2f e1     bx      lr

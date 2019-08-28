@@ -1620,8 +1620,9 @@ private:
   bool NeedBitValueComma = false;
   bool NeedFlowSequenceComma = false;
   bool EnumerationMatchFound = false;
-  bool NeedsNewLine = false;
   bool WriteDefaultValues = false;
+  StringRef Padding;
+  StringRef PaddingBeforeContainer;
 };
 
 /// YAML I/O does conversion based on types. But often native data types
@@ -1905,6 +1906,11 @@ struct SequenceTraits<SmallVector<T, N>,
                       typename std::enable_if<CheckIsBool<
                           SequenceElementTraits<T>::flow>::value>::type>
     : SequenceTraitsImpl<SmallVector<T, N>, SequenceElementTraits<T>::flow> {};
+template <typename T>
+struct SequenceTraits<SmallVectorImpl<T>,
+                      typename std::enable_if<CheckIsBool<
+                          SequenceElementTraits<T>::flow>::value>::type>
+    : SequenceTraitsImpl<SmallVectorImpl<T>, SequenceElementTraits<T>::flow> {};
 
 // Sequences of fundamental types use flow formatting.
 template <typename T>

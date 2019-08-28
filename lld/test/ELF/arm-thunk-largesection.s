@@ -1,6 +1,6 @@
 // REQUIRES: arm
 // RUN: llvm-mc -arm-add-build-attributes -filetype=obj -triple=thumbv7a-none-linux-gnueabi %s -o %t
-// RUN: ld.lld %t -o %t2 2>&1
+// RUN: ld.lld %t -o %t2
 // RUN: llvm-objdump -d -triple=thumbv7a-none-linux-gnueabi -start-address=69632 -stop-address=69636 %t2 | FileCheck -check-prefix=CHECK1 %s
 // RUN: llvm-objdump -d -triple=thumbv7a-none-linux-gnueabi -start-address=73732 -stop-address=73742 %t2 | FileCheck -check-prefix=CHECK2 %s
 // RUN: llvm-objdump -d -triple=thumbv7a-none-linux-gnueabi -start-address=16850936 -stop-address=16850940 %t2 | FileCheck -check-prefix=CHECK3 %s
@@ -16,6 +16,7 @@ _start:
  bx lr
  .space 0x1000
 // CHECK1: Disassembly of section .text:
+// CHECK1-EMPTY:
 // CHECK1-NEXT:_start:
 // CHECK1-NEXT:   11000:       70 47   bx      lr
 // CHECK1-EMPTY:

@@ -58,21 +58,8 @@ static mode_t ParsePermissionString(llvm::StringRef permissions) {
   return user | group | world;
 }
 
-static constexpr OptionDefinition g_permissions_options[] = {
-    // clang-format off
-  {LLDB_OPT_SET_ALL, false, "permissions-value",   'v', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePermissionsNumber, "Give out the numeric value for permissions (e.g. 757)"},
-  {LLDB_OPT_SET_ALL, false, "permissions-string",  's', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePermissionsString, "Give out the string value for permissions (e.g. rwxr-xr--)."},
-  {LLDB_OPT_SET_ALL, false, "user-read",           'r', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow user to read."},
-  {LLDB_OPT_SET_ALL, false, "user-write",          'w', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow user to write."},
-  {LLDB_OPT_SET_ALL, false, "user-exec",           'x', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow user to execute."},
-  {LLDB_OPT_SET_ALL, false, "group-read",          'R', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow group to read."},
-  {LLDB_OPT_SET_ALL, false, "group-write",         'W', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow group to write."},
-  {LLDB_OPT_SET_ALL, false, "group-exec",          'X', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow group to execute."},
-  {LLDB_OPT_SET_ALL, false, "world-read",          'd', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow world to read."},
-  {LLDB_OPT_SET_ALL, false, "world-write",         't', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow world to write."},
-  {LLDB_OPT_SET_ALL, false, "world-exec",          'e', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Allow world to execute."},
-    // clang-format on
-};
+#define LLDB_OPTIONS_permissions
+#include "CommandOptions.inc"
 
 class OptionPermissions : public OptionGroup {
 public:
@@ -191,8 +178,7 @@ protected:
         PlatformSP platform_sp(m_platform_options.CreatePlatformWithOptions(
             m_interpreter, ArchSpec(), select, error, platform_arch));
         if (platform_sp) {
-          m_interpreter.GetDebugger().GetPlatformList().SetSelectedPlatform(
-              platform_sp);
+          GetDebugger().GetPlatformList().SetSelectedPlatform(platform_sp);
 
           platform_sp->GetStatus(result.GetOutputStream());
           result.SetStatus(eReturnStatusSuccessFinishResult);
@@ -236,7 +222,7 @@ protected:
                  host_platform_sp->GetDescription());
 
     uint32_t idx;
-    for (idx = 0; 1; ++idx) {
+    for (idx = 0; true; ++idx) {
       const char *plugin_name =
           PluginManager::GetPlatformPluginNameAtIndex(idx);
       if (plugin_name == nullptr)
@@ -271,14 +257,13 @@ protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     Stream &ostrm = result.GetOutputStream();
 
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
     PlatformSP platform_sp;
     if (target) {
       platform_sp = target->GetPlatform();
     }
     if (!platform_sp) {
-      platform_sp =
-          m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform();
+      platform_sp = GetDebugger().GetPlatformList().GetSelectedPlatform();
     }
     if (platform_sp) {
       platform_sp->GetStatus(ostrm);
@@ -307,15 +292,14 @@ protected:
     Stream &ostrm = result.GetOutputStream();
 
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       Status error(platform_sp->ConnectRemote(args));
       if (error.Success()) {
         platform_sp->GetStatus(ostrm);
         result.SetStatus(eReturnStatusSuccessFinishResult);
 
-        platform_sp->ConnectToWaitingProcesses(m_interpreter.GetDebugger(),
-                                               error);
+        platform_sp->ConnectToWaitingProcesses(GetDebugger(), error);
         if (error.Fail()) {
           result.AppendError(error.AsCString());
           result.SetStatus(eReturnStatusFailed);
@@ -333,7 +317,7 @@ protected:
 
   Options *GetOptions() override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     OptionGroupOptions *m_platform_options = nullptr;
     if (platform_sp) {
       m_platform_options = platform_sp->GetConnectionOptions(m_interpreter);
@@ -357,7 +341,7 @@ public:
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       if (args.GetArgumentCount() == 0) {
         Status error;
@@ -424,7 +408,7 @@ public:
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       if (m_option_working_dir.GetOptionValue().OptionWasSet())
         platform_sp->SetWorkingDirectory(
@@ -460,7 +444,7 @@ public:
 
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       std::string cmd_line;
       args.GetCommandString(cmd_line);
@@ -509,7 +493,7 @@ public:
 
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       Status error;
       std::string cmd_line;
@@ -563,7 +547,7 @@ public:
 
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       std::string cmd_line;
       args.GetCommandString(cmd_line);
@@ -588,12 +572,8 @@ public:
 
 // "platform fread"
 
-static constexpr OptionDefinition g_platform_fread_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_1, false, "offset", 'o', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeIndex, "Offset into the file at which to start reading." },
-  { LLDB_OPT_SET_1, false, "count",  'c', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeCount, "Number of bytes to read from the file." },
-    // clang-format on
-};
+#define LLDB_OPTIONS_platform_fread
+#include "CommandOptions.inc"
 
 class CommandObjectPlatformFRead : public CommandObjectParsed {
 public:
@@ -607,7 +587,7 @@ public:
 
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       std::string cmd_line;
       args.GetCommandString(cmd_line);
@@ -681,12 +661,8 @@ protected:
 
 // "platform fwrite"
 
-static constexpr OptionDefinition g_platform_fwrite_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_1, false, "offset", 'o', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeIndex, "Offset into the file at which to start reading." },
-  { LLDB_OPT_SET_1, false, "data",   'd', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeValue, "Text to write to the file." },
-    // clang-format on
-};
+#define LLDB_OPTIONS_platform_fwrite
+#include "CommandOptions.inc"
 
 class CommandObjectPlatformFWrite : public CommandObjectParsed {
 public:
@@ -700,7 +676,7 @@ public:
 
   bool DoExecute(Args &args, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       std::string cmd_line;
       args.GetCommandString(cmd_line);
@@ -845,7 +821,7 @@ public:
     }
 
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       const char *remote_file_path = args.GetArgumentAtIndex(0);
       const char *local_file_path = args.GetArgumentAtIndex(1);
@@ -910,7 +886,7 @@ public:
     }
 
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       std::string remote_file_path(args.GetArgumentAtIndex(0));
       user_id_t size = platform_sp->GetFileSize(FileSpec(remote_file_path));
@@ -953,7 +929,7 @@ public:
     FileSpec dst_fs(dst ? dst : src_fs.GetFilename().GetCString());
 
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       Status error(platform_sp->PutFile(src_fs, dst_fs));
       if (error.Success()) {
@@ -986,14 +962,13 @@ public:
 
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
     PlatformSP platform_sp;
     if (target) {
       platform_sp = target->GetPlatform();
     }
     if (!platform_sp) {
-      platform_sp =
-          m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform();
+      platform_sp = GetDebugger().GetPlatformList().GetSelectedPlatform();
     }
 
     if (platform_sp) {
@@ -1024,7 +999,7 @@ protected:
       }
 
       if (m_options.launch_info.GetExecutableFile()) {
-        Debugger &debugger = m_interpreter.GetDebugger();
+        Debugger &debugger = GetDebugger();
 
         if (argc == 0)
           target->GetRunArguments(m_options.launch_info.GetArguments());
@@ -1060,24 +1035,9 @@ protected:
 
 // "platform process list"
 
-static OptionDefinition g_platform_process_list_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_1,             false, "pid",         'p', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePid,               "List the process info for a specific process ID." },
-  { LLDB_OPT_SET_2,             true,  "name",        'n', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeProcessName,       "Find processes with executable basenames that match a string." },
-  { LLDB_OPT_SET_3,             true,  "ends-with",   'e', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeProcessName,       "Find processes with executable basenames that end with a string." },
-  { LLDB_OPT_SET_4,             true,  "starts-with", 's', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeProcessName,       "Find processes with executable basenames that start with a string." },
-  { LLDB_OPT_SET_5,             true,  "contains",    'c', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeProcessName,       "Find processes with executable basenames that contain a string." },
-  { LLDB_OPT_SET_6,             true,  "regex",       'r', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeRegularExpression, "Find processes with executable basenames that match a regular expression." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "parent",      'P', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePid,               "Find processes that have a matching parent process ID." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "uid",         'u', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeUnsignedInteger,   "Find processes that have a matching user ID." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "euid",        'U', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeUnsignedInteger,   "Find processes that have a matching effective user ID." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "gid",         'g', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeUnsignedInteger,   "Find processes that have a matching group ID." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "egid",        'G', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeUnsignedInteger,   "Find processes that have a matching effective group ID." },
-  { LLDB_OPT_SET_FROM_TO(2, 6), false, "arch",        'a', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeArchitecture,      "Find processes that have a matching architecture." },
-  { LLDB_OPT_SET_FROM_TO(1, 6), false, "show-args",   'A', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Show process arguments instead of the process executable basename." },
-  { LLDB_OPT_SET_FROM_TO(1, 6), false, "verbose",     'v', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,              "Enable verbose output." },
-    // clang-format on
-};
+static PosixPlatformCommandOptionValidator posix_validator;
+#define LLDB_OPTIONS_platform_process_list
+#include "CommandOptions.inc"
 
 class CommandObjectPlatformProcessList : public CommandObjectParsed {
 public:
@@ -1094,14 +1054,13 @@ public:
 
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
     PlatformSP platform_sp;
     if (target) {
       platform_sp = target->GetPlatform();
     }
     if (!platform_sp) {
-      platform_sp =
-          m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform();
+      platform_sp = GetDebugger().GetPlatformList().GetSelectedPlatform();
     }
 
     if (platform_sp) {
@@ -1200,23 +1159,6 @@ protected:
   public:
     CommandOptions()
         : Options(), match_info(), show_args(false), verbose(false) {
-      static llvm::once_flag g_once_flag;
-      llvm::call_once(g_once_flag, []() {
-        PosixPlatformCommandOptionValidator *posix_validator =
-            new PosixPlatformCommandOptionValidator();
-        for (auto &Option : g_platform_process_list_options) {
-          switch (Option.short_option) {
-          case 'u':
-          case 'U':
-          case 'g':
-          case 'G':
-            Option.validator = posix_validator;
-            break;
-          default:
-            break;
-          }
-        }
-      });
     }
 
     ~CommandOptions() override = default;
@@ -1384,14 +1326,13 @@ public:
 
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
     PlatformSP platform_sp;
     if (target) {
       platform_sp = target->GetPlatform();
     }
     if (!platform_sp) {
-      platform_sp =
-          m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform();
+      platform_sp = GetDebugger().GetPlatformList().GetSelectedPlatform();
     }
 
     if (platform_sp) {
@@ -1442,14 +1383,8 @@ protected:
   }
 };
 
-static constexpr OptionDefinition g_platform_process_attach_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_ALL, false, "plugin",  'P', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePlugin,      "Name of the process plugin you want to use." },
-  { LLDB_OPT_SET_1,   false, "pid",     'p', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypePid,         "The process ID of an existing process to attach to." },
-  { LLDB_OPT_SET_2,   false, "name",    'n', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeProcessName, "The name of the process to attach to." },
-  { LLDB_OPT_SET_2,   false, "waitfor", 'w', OptionParser::eNoArgument,       nullptr, {}, 0, eArgTypeNone,        "Wait for the process with <process-name> to launch." },
-    // clang-format on
-};
+#define LLDB_OPTIONS_platform_process_attach
+#include "CommandOptions.inc"
 
 class CommandObjectPlatformProcessAttach : public CommandObjectParsed {
 public:
@@ -1567,11 +1502,11 @@ public:
 
   bool DoExecute(Args &command, CommandReturnObject &result) override {
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (platform_sp) {
       Status err;
       ProcessSP remote_process_sp = platform_sp->Attach(
-          m_options.attach_info, m_interpreter.GetDebugger(), nullptr, err);
+          m_options.attach_info, GetDebugger(), nullptr, err);
       if (err.Fail()) {
         result.AppendError(err.AsCString());
         result.SetStatus(eReturnStatusFailed);
@@ -1621,11 +1556,8 @@ private:
 };
 
 // "platform shell"
-static constexpr OptionDefinition g_platform_shell_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_ALL, false, "timeout", 't', OptionParser::eRequiredArgument, nullptr, {}, 0, eArgTypeValue, "Seconds to wait for the remote host to finish running the command." },
-    // clang-format on
-};
+#define LLDB_OPTIONS_platform_shell
+#include "CommandOptions.inc"
 
 class CommandObjectPlatformShell : public CommandObjectRaw {
 public:
@@ -1699,7 +1631,7 @@ public:
         return false;
 
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     Status error;
     if (platform_sp) {
       FileSpec working_dir{};
@@ -1771,7 +1703,7 @@ public:
       return false;
     }
     PlatformSP platform_sp(
-        m_interpreter.GetDebugger().GetPlatformList().GetSelectedPlatform());
+        GetDebugger().GetPlatformList().GetSelectedPlatform());
     if (!platform_sp) {
       result.AppendError("no platform currently selected");
       result.SetStatus(eReturnStatusFailed);

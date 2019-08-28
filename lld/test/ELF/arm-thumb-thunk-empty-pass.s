@@ -1,6 +1,6 @@
 // REQUIRES: arm
 // RUN: llvm-mc -arm-add-build-attributes -filetype=obj -triple=thumbv7a-none-linux-gnueabi %s -o %t
-// RUN: ld.lld %t -o %t2 2>&1
+// RUN: ld.lld %t -o %t2
 // RUN: llvm-objdump -d %t2 -start-address=69632 -stop-address=69646 -triple=thumbv7a-linux-gnueabihf | FileCheck -check-prefix=CHECK1 %s
 // RUN: llvm-objdump -d %t2 -start-address=16846856 -stop-address=16846874 -triple=thumbv7a-linux-gnueabihf | FileCheck -check-prefix=CHECK2 %s
  .syntax unified
@@ -17,6 +17,7 @@ foo:
  bl _start
 
 // CHECK1: Disassembly of section .text:
+// CHECK1-EMPTY:
 // CHECK1-NEXT: _start:
 // CHECK1-NEXT:    11000:       ff f7 fe ff     bl      #-4
 // CHECK1: __Thumbv7ABSLongThunk__start:

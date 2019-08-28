@@ -24,32 +24,33 @@
 using namespace lldb;
 using namespace lldb_private;
 
-// CommandObjectWatchpointCommandAdd
-
 // FIXME: "script-type" needs to have its contents determined dynamically, so
-// somebody can add a new scripting
-// language to lldb and have it pickable here without having to change this
-// enumeration by hand and rebuild lldb proper.
-
+// somebody can add a new scripting language to lldb and have it pickable here
+// without having to change this enumeration by hand and rebuild lldb proper.
 static constexpr OptionEnumValueElement g_script_option_enumeration[] = {
-    {eScriptLanguageNone, "command",
-     "Commands are in the lldb command interpreter language"},
-    {eScriptLanguagePython, "python", "Commands are in the Python language."},
-    {eSortOrderByName, "default-script",
-     "Commands are in the default scripting language."} };
+    {
+        eScriptLanguageNone,
+        "command",
+        "Commands are in the lldb command interpreter language",
+    },
+    {
+        eScriptLanguagePython,
+        "python",
+        "Commands are in the Python language.",
+    },
+    {
+        eSortOrderByName,
+        "default-script",
+        "Commands are in the default scripting language.",
+    },
+};
 
 static constexpr OptionEnumValues ScriptOptionEnum() {
   return OptionEnumValues(g_script_option_enumeration);
 }
 
-static constexpr OptionDefinition g_watchpoint_command_add_options[] = {
-    // clang-format off
-  { LLDB_OPT_SET_1,   false, "one-liner",       'o', OptionParser::eRequiredArgument, nullptr, {},                 0, eArgTypeOneLiner,       "Specify a one-line watchpoint command inline. Be sure to surround it with quotes." },
-  { LLDB_OPT_SET_ALL, false, "stop-on-error",   'e', OptionParser::eRequiredArgument, nullptr, {},                 0, eArgTypeBoolean,        "Specify whether watchpoint command execution should terminate on error." },
-  { LLDB_OPT_SET_ALL, false, "script-type",     's', OptionParser::eRequiredArgument, nullptr, ScriptOptionEnum(), 0, eArgTypeNone,           "Specify the language for the commands - if none is specified, the lldb command interpreter will be used." },
-  { LLDB_OPT_SET_2,   false, "python-function", 'F', OptionParser::eRequiredArgument, nullptr, {},                 0, eArgTypePythonFunction, "Give the name of a Python function to run as command for this watchpoint. Be sure to give a module name if appropriate." }
-    // clang-format on
-};
+#define LLDB_OPTIONS_watchpoint_command_add
+#include "CommandOptions.inc"
 
 class CommandObjectWatchpointCommandAdd : public CommandObjectParsed,
                                           public IOHandlerDelegateMultiline {
@@ -295,6 +296,7 @@ are no syntax errors may indicate that a function was declared but never called.
         options.SetStopOnError(data->stop_on_error);
         options.SetEchoCommands(false);
         options.SetPrintResults(true);
+        options.SetPrintErrors(true);
         options.SetAddToHistory(false);
 
         debugger.GetCommandInterpreter().HandleCommands(commands, &exe_ctx,
@@ -387,7 +389,7 @@ are no syntax errors may indicate that a function was declared but never called.
 
 protected:
   bool DoExecute(Args &command, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
 
     if (target == nullptr) {
       result.AppendError("There is not a current executable; there are no "
@@ -442,7 +444,7 @@ protected:
         if (m_options.m_use_script_language) {
           // Special handling for one-liner specified inline.
           if (m_options.m_use_one_liner) {
-            m_interpreter.GetScriptInterpreter()->SetWatchpointCommandCallback(
+            GetDebugger().GetScriptInterpreter()->SetWatchpointCommandCallback(
                 wp_options, m_options.m_one_liner.c_str());
           }
           // Special handling for using a Python function by name instead of
@@ -452,10 +454,11 @@ protected:
           else if (!m_options.m_function_name.empty()) {
             std::string oneliner(m_options.m_function_name);
             oneliner += "(frame, wp, internal_dict)";
-            m_interpreter.GetScriptInterpreter()->SetWatchpointCommandCallback(
+            GetDebugger().GetScriptInterpreter()->SetWatchpointCommandCallback(
                 wp_options, oneliner.c_str());
           } else {
-            m_interpreter.GetScriptInterpreter()
+            GetDebugger()
+                .GetScriptInterpreter()
                 ->CollectDataForWatchpointCommandCallback(wp_options, result);
           }
         } else {
@@ -503,7 +506,7 @@ public:
 
 protected:
   bool DoExecute(Args &command, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
 
     if (target == nullptr) {
       result.AppendError("There is not a current executable; there are no "
@@ -582,7 +585,7 @@ public:
 
 protected:
   bool DoExecute(Args &command, CommandReturnObject &result) override {
-    Target *target = m_interpreter.GetDebugger().GetSelectedTarget().get();
+    Target *target = GetDebugger().GetSelectedTarget().get();
 
     if (target == nullptr) {
       result.AppendError("There is not a current executable; there are no "

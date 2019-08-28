@@ -251,7 +251,7 @@ static bool printSourceSymbolsFromModule(StringRef modulePath,
   FileSystemOptions FileSystemOpts;
   auto pchContOps = std::make_shared<PCHContainerOperations>();
   // Register the support for object-file-wrapped Clang modules.
-  pchContOps->registerReader(llvm::make_unique<ObjectFilePCHContainerReader>());
+  pchContOps->registerReader(std::make_unique<ObjectFilePCHContainerReader>());
   auto pchRdr = pchContOps->getReaderOrNull(format);
   if (!pchRdr) {
     errs() << "unknown module format: " << format << '\n';
@@ -264,7 +264,7 @@ static bool printSourceSymbolsFromModule(StringRef modulePath,
       modulePath, *pchRdr, ASTUnit::LoadASTOnly, Diags,
       FileSystemOpts, /*UseDebugInfo=*/false,
       /*OnlyLocalDecls=*/true, None,
-      /*CaptureDiagnostics=*/false,
+      CaptureDiagsKind::None,
       /*AllowPCHWithCompilerErrors=*/true,
       /*UserFilesAreVolatile=*/false);
   if (!AU) {

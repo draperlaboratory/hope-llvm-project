@@ -50,9 +50,8 @@ SampleProfileWriter::write(const StringMap<FunctionSamples> &ProfileMap) {
   for (const auto &I : ProfileMap)
     V.push_back(std::make_pair(I.getKey(), &I.second));
 
-  std::stable_sort(
-      V.begin(), V.end(),
-      [](const NameFunctionSamples &A, const NameFunctionSamples &B) {
+  llvm::stable_sort(
+      V, [](const NameFunctionSamples &A, const NameFunctionSamples &B) {
         if (A.second->getTotalSamples() == B.second->getTotalSamples())
           return A.first > B.first;
         return A.second->getTotalSamples() > B.second->getTotalSamples();
@@ -351,9 +350,9 @@ SampleProfileWriter::create(StringRef Filename, SampleProfileFormat Format) {
   std::error_code EC;
   std::unique_ptr<raw_ostream> OS;
   if (Format == SPF_Binary || Format == SPF_Compact_Binary)
-    OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::F_None));
+    OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::OF_None));
   else
-    OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::F_Text));
+    OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::OF_Text));
   if (EC)
     return EC;
 

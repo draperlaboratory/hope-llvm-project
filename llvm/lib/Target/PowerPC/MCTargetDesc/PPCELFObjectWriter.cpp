@@ -133,6 +133,9 @@ unsigned PPCELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
   } else {
     switch ((unsigned)Fixup.getKind()) {
       default: llvm_unreachable("invalid fixup kind!");
+    case FK_NONE:
+      Type = ELF::R_PPC_NONE;
+      break;
     case PPC::fixup_ppc_br24abs:
       Type = ELF::R_PPC_ADDR24;
       break;
@@ -440,5 +443,5 @@ bool PPCELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
 
 std::unique_ptr<MCObjectTargetWriter>
 llvm::createPPCELFObjectWriter(bool Is64Bit, uint8_t OSABI) {
-  return llvm::make_unique<PPCELFObjectWriter>(Is64Bit, OSABI);
+  return std::make_unique<PPCELFObjectWriter>(Is64Bit, OSABI);
 }

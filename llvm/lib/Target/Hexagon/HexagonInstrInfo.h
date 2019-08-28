@@ -139,7 +139,7 @@ public:
   /// is finished.  Return the value/register of the new loop count.  We need
   /// this function when peeling off one or more iterations of a loop. This
   /// function assumes the nth iteration is peeled first.
-  unsigned reduceLoopCount(MachineBasicBlock &MBB,
+  unsigned reduceLoopCount(MachineBasicBlock &MBB, MachineBasicBlock &PreHeader,
                            MachineInstr *IndVar, MachineInstr &Cmp,
                            SmallVectorImpl<MachineOperand> &Cond,
                            SmallVectorImpl<MachineInstr *> &PrevInsts,
@@ -217,7 +217,8 @@ public:
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
   /// Get the base register and byte offset of a load/store instr.
-  bool getMemOperandWithOffset(MachineInstr &LdSt, MachineOperand *&BaseOp,
+  bool getMemOperandWithOffset(const MachineInstr &LdSt,
+                               const MachineOperand *&BaseOp,
                                int64_t &Offset,
                                const TargetRegisterInfo *TRI) const override;
 
@@ -265,8 +266,10 @@ public:
 
   /// Measure the specified inline asm to determine an approximation of its
   /// length.
-  unsigned getInlineAsmLength(const char *Str,
-                              const MCAsmInfo &MAI) const override;
+  unsigned getInlineAsmLength(
+    const char *Str,
+    const MCAsmInfo &MAI,
+    const TargetSubtargetInfo *STI = nullptr) const override;
 
   /// Allocate and return a hazard recognizer to use for this target when
   /// scheduling the machine instructions after register allocation.
@@ -297,7 +300,8 @@ public:
   // memory addresses. This function returns true if two MIs access different
   // memory addresses and false otherwise.
   bool
-  areMemAccessesTriviallyDisjoint(MachineInstr &MIa, MachineInstr &MIb,
+  areMemAccessesTriviallyDisjoint(const MachineInstr &MIa,
+                                  const MachineInstr &MIb,
                                   AliasAnalysis *AA = nullptr) const override;
 
   /// For instructions with a base and offset, return the position of the

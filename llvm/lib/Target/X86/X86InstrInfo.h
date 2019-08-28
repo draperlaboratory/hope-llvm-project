@@ -288,7 +288,8 @@ public:
                      SmallVectorImpl<MachineOperand> &Cond,
                      bool AllowModify) const override;
 
-  bool getMemOperandWithOffset(MachineInstr &LdSt, MachineOperand *&BaseOp,
+  bool getMemOperandWithOffset(const MachineInstr &LdSt,
+                               const MachineOperand *&BaseOp,
                                int64_t &Offset,
                                const TargetRegisterInfo *TRI) const override;
   bool analyzeBranchPredicate(MachineBasicBlock &MBB,
@@ -351,7 +352,8 @@ public:
   foldMemoryOperandImpl(MachineFunction &MF, MachineInstr &MI,
                         ArrayRef<unsigned> Ops,
                         MachineBasicBlock::iterator InsertPt, int FrameIndex,
-                        LiveIntervals *LIS = nullptr) const override;
+                        LiveIntervals *LIS = nullptr,
+                        VirtRegMap *VRM = nullptr) const override;
 
   /// foldMemoryOperand - Same as the previous version except it allows folding
   /// of any load and store from / to any address, not just from a specific
@@ -526,6 +528,9 @@ public:
 
 #define GET_INSTRINFO_HELPER_DECLS
 #include "X86GenInstrInfo.inc"
+
+  Optional<ParamLoadedValue>
+  describeLoadedValue(const MachineInstr &MI) const override;
 
 protected:
   /// Commutes the operands in the given instruction by changing the operands

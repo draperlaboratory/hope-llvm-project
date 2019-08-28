@@ -7,8 +7,6 @@ from __future__ import print_function
 
 import os
 import sys
-import time
-import re
 import lldb
 from lldbsuite.test.decorators import *
 from lldbsuite.test.lldbtest import *
@@ -187,7 +185,8 @@ class RegisterCommandsTestCase(TestBase):
         elif not value.IsValid():
             return  # If register doesn't exist, skip this test
 
-        self.runCmd("register write " + register + " \'" + new_value + "\'")
+        # Also test the 're' alias.
+        self.runCmd("re write " + register + " \'" + new_value + "\'")
         self.expect(
             "register read " +
             register,

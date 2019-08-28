@@ -198,8 +198,7 @@ static inline MemOpKey getMemOpKey(const MachineInstr &MI, unsigned N) {
 static inline bool isIdenticalOp(const MachineOperand &MO1,
                                  const MachineOperand &MO2) {
   return MO1.isIdenticalTo(MO2) &&
-         (!MO1.isReg() ||
-          !TargetRegisterInfo::isPhysicalRegister(MO1.getReg()));
+         (!MO1.isReg() || !Register::isPhysicalRegister(MO1.getReg()));
 }
 
 #ifndef NDEBUG
@@ -568,11 +567,8 @@ MachineInstr *OptimizeLEAPass::replaceDebugValue(MachineInstr &MI,
                                                  unsigned VReg,
                                                  int64_t AddrDispShift) {
   DIExpression *Expr = const_cast<DIExpression *>(MI.getDebugExpression());
-
   if (AddrDispShift != 0)
-    Expr = DIExpression::prepend(Expr, DIExpression::NoDeref, AddrDispShift,
-                                 DIExpression::NoDeref,
-                                 DIExpression::WithStackValue);
+    Expr = DIExpression::prepend(Expr, DIExpression::StackValue, AddrDispShift);
 
   // Replace DBG_VALUE instruction with modified version.
   MachineBasicBlock *MBB = MI.getParent();
@@ -616,8 +612,8 @@ bool OptimizeLEAPass::removeRedundantLEAs(MemOpMap &LEAs) {
         // Loop over all uses of the Last LEA and update their operands. Note
         // that the correctness of this has already been checked in the
         // isReplaceable function.
-        unsigned FirstVReg = First.getOperand(0).getReg();
-        unsigned LastVReg = Last.getOperand(0).getReg();
+        Register FirstVReg = First.getOperand(0).getReg();
+        Register LastVReg = Last.getOperand(0).getReg();
         for (auto UI = MRI->use_begin(LastVReg), UE = MRI->use_end();
              UI != UE;) {
           MachineOperand &MO = *UI++;

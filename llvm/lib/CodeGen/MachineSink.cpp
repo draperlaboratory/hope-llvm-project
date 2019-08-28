@@ -195,11 +195,10 @@ bool MachineSinking::PerformTrivialForwardCoalescing(MachineInstr &MI,
   if (!MI.isCopy())
     return false;
 
-  unsigned SrcReg = MI.getOperand(1).getReg();
-  unsigned DstReg = MI.getOperand(0).getReg();
-  if (!TargetRegisterInfo::isVirtualRegister(SrcReg) ||
-      !TargetRegisterInfo::isVirtualRegister(DstReg) ||
-      !MRI->hasOneNonDBGUse(SrcReg))
+  Register SrcReg = MI.getOperand(1).getReg();
+  Register DstReg = MI.getOperand(0).getReg();
+  if (!Register::isVirtualRegister(SrcReg) ||
+      !Register::isVirtualRegister(DstReg) || !MRI->hasOneNonDBGUse(SrcReg))
     return false;
 
   const TargetRegisterClass *SRC = MRI->getRegClass(SrcReg);
@@ -233,8 +232,7 @@ MachineSinking::AllUsesDominatedByBlock(unsigned Reg,
                                         MachineBasicBlock *DefMBB,
                                         bool &BreakPHIEdge,
                                         bool &LocalUse) const {
-  assert(TargetRegisterInfo::isVirtualRegister(Reg) &&
-         "Only makes sense for vregs");
+  assert(Register::isVirtualRegister(Reg) && "Only makes sense for vregs");
 
   // Ignore debug uses because debug info doesn't affect the code.
   if (MRI->use_nodbg_empty(Reg))
@@ -416,13 +414,13 @@ bool MachineSinking::isWorthBreakingCriticalEdge(MachineInstr &MI,
     const MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg() || !MO.isUse())
       continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0)
       continue;
 
     // We don't move live definitions of physical registers,
     // so sinking their uses won't enable any opportunities.
-    if (TargetRegisterInfo::isPhysicalRegister(Reg))
+    if (Register::isPhysicalRegister(Reg))
       continue;
 
     // If this instruction is the only user of a virtual register,
@@ -584,9 +582,8 @@ MachineSinking::GetAllSortedSuccessors(MachineInstr &MI, MachineBasicBlock *MBB,
       AllSuccs.push_back(DTChild->getBlock());
 
   // Sort Successors according to their loop depth or block frequency info.
-  std::stable_sort(
-      AllSuccs.begin(), AllSuccs.end(),
-      [this](const MachineBasicBlock *L, const MachineBasicBlock *R) {
+  llvm::stable_sort(
+      AllSuccs, [this](const MachineBasicBlock *L, const MachineBasicBlock *R) {
         uint64_t LHSFreq = MBFI ? MBFI->getBlockFreq(L).getFrequency() : 0;
         uint64_t RHSFreq = MBFI ? MBFI->getBlockFreq(R).getFrequency() : 0;
         bool HasBlockFreq = LHSFreq != 0 && RHSFreq != 0;
@@ -616,10 +613,10 @@ MachineSinking::FindSuccToSinkTo(MachineInstr &MI, MachineBasicBlock *MBB,
     const MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg()) continue;  // Ignore non-register operands.
 
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0) continue;
 
-    if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+    if (Register::isPhysicalRegister(Reg)) {
       if (MO.isUse()) {
         // If the physreg has no defs anywhere, it's just an ambient register
         // and we can freely move its uses. Alternatively, if it's allocatable,
@@ -715,7 +712,7 @@ static bool SinkingPreventsImplicitNullCheck(MachineInstr &MI,
       !PredBB->getTerminator()->getMetadata(LLVMContext::MD_make_implicit))
     return false;
 
-  MachineOperand *BaseOp;
+  const MachineOperand *BaseOp;
   int64_t Offset;
   if (!TII->getMemOperandWithOffset(MI, BaseOp, Offset, TRI))
     return false;
@@ -818,8 +815,9 @@ bool MachineSinking::SinkInstruction(MachineInstr &MI, bool &SawStore,
   for (unsigned I = 0, E = MI.getNumOperands(); I != E; ++I) {
     const MachineOperand &MO = MI.getOperand(I);
     if (!MO.isReg()) continue;
-    unsigned Reg = MO.getReg();
-    if (Reg == 0 || !TargetRegisterInfo::isPhysicalRegister(Reg)) continue;
+    Register Reg = MO.getReg();
+    if (Reg == 0 || !Register::isPhysicalRegister(Reg))
+      continue;
     if (SuccToSinkTo->isLiveIn(Reg))
       return false;
   }
@@ -1031,7 +1029,7 @@ static void clearKillFlags(MachineInstr *MI, MachineBasicBlock &CurBB,
                            const TargetRegisterInfo *TRI) {
   for (auto U : UsedOpsInCopy) {
     MachineOperand &MO = MI->getOperand(U);
-    unsigned SrcReg = MO.getReg();
+    Register SrcReg = MO.getReg();
     if (!UsedRegUnits.available(SrcReg)) {
       MachineBasicBlock::iterator NI = std::next(MI->getIterator());
       for (MachineInstr &UI : make_range(NI, CurBB.end())) {
@@ -1054,7 +1052,7 @@ static void updateLiveIn(MachineInstr *MI, MachineBasicBlock *SuccBB,
     for (MCSubRegIterator S(DefReg, TRI, true); S.isValid(); ++S)
       SuccBB->removeLiveIn(*S);
   for (auto U : UsedOpsInCopy) {
-    unsigned Reg = MI->getOperand(U).getReg();
+    Register Reg = MI->getOperand(U).getReg();
     if (!SuccBB->isLiveIn(Reg))
       SuccBB->addLiveIn(Reg);
   }
@@ -1070,7 +1068,7 @@ static bool hasRegisterDependency(MachineInstr *MI,
     MachineOperand &MO = MI->getOperand(i);
     if (!MO.isReg())
       continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (!Reg)
       continue;
     if (MO.isDef()) {
@@ -1131,7 +1129,7 @@ bool PostRAMachineSinking::tryToSinkCopy(MachineBasicBlock &CurBB,
     // for DBG_VALUEs later, record them when they're encountered.
     if (MI->isDebugValue()) {
       auto &MO = MI->getOperand(0);
-      if (MO.isReg() && TRI->isPhysicalRegister(MO.getReg())) {
+      if (MO.isReg() && Register::isPhysicalRegister(MO.getReg())) {
         // Bail if we can already tell the sink would be rejected, rather
         // than needlessly accumulating lots of DBG_VALUEs.
         if (hasRegisterDependency(MI, UsedOpsInCopy, DefedRegsInCopy,
@@ -1183,7 +1181,7 @@ bool PostRAMachineSinking::tryToSinkCopy(MachineBasicBlock &CurBB,
     for (auto &MO : MI->operands()) {
       if (!MO.isReg() || !MO.isDef())
         continue;
-      unsigned reg = MO.getReg();
+      Register reg = MO.getReg();
       for (auto *MI : SeenDbgInstrs.lookup(reg))
         DbgValsToSink.push_back(MI);
     }

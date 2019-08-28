@@ -149,8 +149,9 @@ clang::QualType AppleObjCTypeEncodingParser::BuildAggregate(
       }
       ClangASTContext::AddFieldToRecordType(
           union_type, element.name.c_str(),
-          CompilerType(&ast_ctx, element.type), lldb::eAccessPublic,
-          element.bitfield);
+          CompilerType(ClangASTContext::GetASTContext(&ast_ctx),
+                       element.type.getAsOpaquePtr()),
+          lldb::eAccessPublic, element.bitfield);
       ++count;
     }
     ClangASTContext::CompleteTagDeclarationDefinition(union_type);
@@ -172,7 +173,9 @@ AppleObjCTypeEncodingParser::BuildArray(clang::ASTContext &ast_ctx,
   if (!lldb_ctx)
     return clang::QualType();
   CompilerType array_type(lldb_ctx->CreateArrayType(
-      CompilerType(&ast_ctx, element_type), size, false));
+      CompilerType(ClangASTContext::GetASTContext(&ast_ctx),
+                   element_type.getAsOpaquePtr()),
+      size, false));
   return ClangUtil::GetQualType(array_type);
 }
 
@@ -245,25 +248,19 @@ clang::QualType AppleObjCTypeEncodingParser::BuildObjCObjectPointerType(
     if (!decl_vendor)
       return clang::QualType();
 
-    const bool append = false;
-    const uint32_t max_matches = 1;
-    std::vector<clang::NamedDecl *> decls;
-
-    uint32_t num_types =
-        decl_vendor->FindDecls(ConstString(name), append, max_matches, decls);
+    auto types = decl_vendor->FindTypes(ConstString(name), /*max_matches*/ 1);
 
 // The user can forward-declare something that has no definition.  The runtime
 // doesn't prohibit this at all. This is a rare and very weird case.  We keep
 // this assert in debug builds so we catch other weird cases.
 #ifdef LLDB_CONFIGURATION_DEBUG
-    assert(num_types);
+    assert(!types.empty());
 #else
-    if (!num_types)
+    if (types.empty())
       return ast_ctx.getObjCIdType();
 #endif
 
-    return ClangUtil::GetQualType(
-        ClangASTContext::GetTypeForDecl(decls[0]).GetPointerType());
+    return ClangUtil::GetQualType(types.front().GetPointerType());
   } else {
     // We're going to resolve this dynamically anyway, so just smile and wave.
     return ast_ctx.getObjCIdType();
@@ -381,7 +378,8 @@ CompilerType AppleObjCTypeEncodingParser::RealizeType(
   if (name && name[0]) {
     StringLexer lexer(name);
     clang::QualType qual_type = BuildType(ast_ctx, lexer, for_expression);
-    return CompilerType(&ast_ctx, qual_type);
+    return CompilerType(ClangASTContext::GetASTContext(&ast_ctx),
+                        qual_type.getAsOpaquePtr());
   }
   return CompilerType();
 }

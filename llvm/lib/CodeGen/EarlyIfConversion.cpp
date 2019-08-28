@@ -232,14 +232,14 @@ bool SSAIfConv::canSpeculateInstrs(MachineBasicBlock *MBB) {
       }
       if (!MO.isReg())
         continue;
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
 
       // Remember clobbered regunits.
-      if (MO.isDef() && TargetRegisterInfo::isPhysicalRegister(Reg))
+      if (MO.isDef() && Register::isPhysicalRegister(Reg))
         for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units)
           ClobberedRegUnits.set(*Units);
 
-      if (!MO.readsReg() || !TargetRegisterInfo::isVirtualRegister(Reg))
+      if (!MO.readsReg() || !Register::isVirtualRegister(Reg))
         continue;
       MachineInstr *DefMI = MRI->getVRegDef(Reg);
       if (!DefMI || DefMI->getParent() != Head)
@@ -288,8 +288,8 @@ bool SSAIfConv::findInsertionPoint() {
       // We're ignoring regmask operands. That is conservatively correct.
       if (!MO.isReg())
         continue;
-      unsigned Reg = MO.getReg();
-      if (!TargetRegisterInfo::isPhysicalRegister(Reg))
+      Register Reg = MO.getReg();
+      if (!Register::isPhysicalRegister(Reg))
         continue;
       // I clobbers Reg, so it isn't live before I.
       if (MO.isDef())
@@ -423,8 +423,8 @@ bool SSAIfConv::canConvertIf(MachineBasicBlock *MBB) {
       if (PI.PHI->getOperand(i+1).getMBB() == FPred)
         PI.FReg = PI.PHI->getOperand(i).getReg();
     }
-    assert(TargetRegisterInfo::isVirtualRegister(PI.TReg) && "Bad PHI");
-    assert(TargetRegisterInfo::isVirtualRegister(PI.FReg) && "Bad PHI");
+    assert(Register::isVirtualRegister(PI.TReg) && "Bad PHI");
+    assert(Register::isVirtualRegister(PI.FReg) && "Bad PHI");
 
     // Get target information.
     if (!TII->canInsertSelect(*Head, Cond, PI.TReg, PI.FReg,
@@ -467,7 +467,7 @@ void SSAIfConv::replacePHIInstrs() {
   for (unsigned i = 0, e = PHIs.size(); i != e; ++i) {
     PHIInfo &PI = PHIs[i];
     LLVM_DEBUG(dbgs() << "If-converting " << *PI.PHI);
-    unsigned DstReg = PI.PHI->getOperand(0).getReg();
+    Register DstReg = PI.PHI->getOperand(0).getReg();
     TII->insertSelect(*Head, FirstTerm, HeadDL, DstReg, Cond, PI.TReg, PI.FReg);
     LLVM_DEBUG(dbgs() << "          --> " << *std::prev(FirstTerm));
     PI.PHI->eraseFromParent();
@@ -494,7 +494,7 @@ void SSAIfConv::rewritePHIOperands() {
       // equal.
       DstReg = PI.TReg;
     } else {
-      unsigned PHIDst = PI.PHI->getOperand(0).getReg();
+      Register PHIDst = PI.PHI->getOperand(0).getReg();
       DstReg = MRI->createVirtualRegister(MRI->getRegClass(PHIDst));
       TII->insertSelect(*Head, FirstTerm, HeadDL,
                          DstReg, Cond, PI.TReg, PI.FReg);

@@ -147,19 +147,7 @@ struct WasmRelocationEntry {
       : Offset(Offset), Symbol(Symbol), Addend(Addend), Type(Type),
         FixupSection(FixupSection) {}
 
-  bool hasAddend() const {
-    switch (Type) {
-    case wasm::R_WASM_MEMORY_ADDR_LEB:
-    case wasm::R_WASM_MEMORY_ADDR_SLEB:
-    case wasm::R_WASM_MEMORY_ADDR_REL_SLEB:
-    case wasm::R_WASM_MEMORY_ADDR_I32:
-    case wasm::R_WASM_FUNCTION_OFFSET_I32:
-    case wasm::R_WASM_SECTION_OFFSET_I32:
-      return true;
-    default:
-      return false;
-    }
-  }
+  bool hasAddend() const { return wasm::relocTypeHasAddend(Type); }
 
   void print(raw_ostream &Out) const {
     Out << wasm::relocTypetoString(Type) << " Off=" << Offset
@@ -934,9 +922,8 @@ void WasmObjectWriter::writeRelocSection(
   // order, but for the code section we combine many MC sections into single
   // wasm section, and this order is determined by the order of Asm.Symbols()
   // not the sections order.
-  std::stable_sort(
-      Relocs.begin(), Relocs.end(),
-      [](const WasmRelocationEntry &A, const WasmRelocationEntry &B) {
+  llvm::stable_sort(
+      Relocs, [](const WasmRelocationEntry &A, const WasmRelocationEntry &B) {
         return (A.Offset + A.FixupSection->getSectionOffset()) <
                (B.Offset + B.FixupSection->getSectionOffset());
       });
@@ -1309,12 +1296,12 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
 
       // Separate out the producers and target features sections
       if (Name == "producers") {
-        ProducersSection = llvm::make_unique<WasmCustomSection>(Name, &Section);
+        ProducersSection = std::make_unique<WasmCustomSection>(Name, &Section);
         continue;
       }
       if (Name == "target_features") {
         TargetFeaturesSection =
-            llvm::make_unique<WasmCustomSection>(Name, &Section);
+            std::make_unique<WasmCustomSection>(Name, &Section);
         continue;
       }
 
@@ -1426,7 +1413,6 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       } else {
         // An import; the index was assigned above.
         assert(WasmIndices.count(&WS) > 0);
-        Index = WasmIndices.find(&WS)->second;
       }
       LLVM_DEBUG(dbgs() << "  -> event index: " << WasmIndices.find(&WS)->second
                         << "\n");
@@ -1632,5 +1618,5 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
 std::unique_ptr<MCObjectWriter>
 llvm::createWasmObjectWriter(std::unique_ptr<MCWasmObjectTargetWriter> MOTW,
                              raw_pwrite_stream &OS) {
-  return llvm::make_unique<WasmObjectWriter>(std::move(MOTW), OS);
+  return std::make_unique<WasmObjectWriter>(std::move(MOTW), OS);
 }

@@ -1,6 +1,6 @@
 // REQUIRES: arm
 // RUN: llvm-mc -filetype=obj -triple=thumbv7a-none-linux-gnueabi %s -o %t
-// RUN: ld.lld %t -o %t2 2>&1
+// RUN: ld.lld %t -o %t2
 // RUN: llvm-objdump -triple=thumbv7a-none-linux-gnueabi -d %t2 | FileCheck %s
 
 // Check that the ARM ABI rules for undefined weak symbols are applied.
@@ -28,6 +28,7 @@ _start:
  movw r0, :lower16:target - .
 
 // CHECK: Disassembly of section .text:
+// CHECK-EMPTY:
 // 69636 = 0x11004
 // CHECK:         11000: {{.*}} beq.w   #0 <_start+0x4>
 // CHECK-NEXT:    11004: {{.*}} b.w     #0 <_start+0x8>

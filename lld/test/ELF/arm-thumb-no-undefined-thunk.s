@@ -1,6 +1,6 @@
 // REQUIRES: arm
 // RUN: llvm-mc -filetype=obj -triple=thumbv7a-none-linux-gnueabi %s -o %t
-// RUN: ld.lld %t -o %t2 2>&1
+// RUN: ld.lld %t -o %t2
 // RUN: llvm-objdump -triple=thumbv7a-none-linux-gnueabi -d %t2 | FileCheck %s
 
 // Check that no thunks are created for an undefined weak symbol
@@ -17,6 +17,7 @@ _start:
  b.w target
 
 // CHECK: Disassembly of section .text:
+// CHECK-EMPTY:
 // CHECK-NEXT: _start:
 // 69636 = 0x11004 = next instruction
 // CHECK:         11000: {{.*}} bl      #0
