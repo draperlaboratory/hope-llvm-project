@@ -1,0 +1,60 @@
+.PHONY: all
+.PHONY: debug
+.PHONY: release
+.PHONY: install
+.PHONY: clean
+
+export ISP_PREFIX ?= $(HOME)/.local/isp/
+
+ifeq "$(shell isp-support/check_ninja_version)" "System ninja is new enough"
+	NINJA := ninja
+else
+	NINJA := $(HOME)/.local/bin/ninja
+endif
+
+BUILD_TYPE ?= debug
+
+COMMON_CMAKE_FLAGS += -G "Ninja"
+COMMON_CMAKE_FLAGS += -DLLVM_ENABLE_PROJECTS="clang"
+COMMON_CMAKE_FLAGS += -DCMAKE_MAKE_PROGRAM=$(NINJA)
+COMMON_CMAKE_FLAGS += -DCMAKE_INSTALL_PREFIX=$(ISP_PREFIX)
+COMMON_CMAKE_FLAGS += -DCMAKE_C_COMPILER=clang
+COMMON_CMAKE_FLAGS += -DCMAKE_CXX_COMPILER=clang++
+COMMON_CMAKE_FLAGS += -DLLVM_BINUTILS_INCDIR=/usr/include
+COMMON_CMAKE_FLAGS += -DBUILD_SHARED_LIBS=True
+COMMON_CMAKE_FLAGS += -DLLVM_OPTIMIZED_TABLEGEN=True
+COMMON_CMAKE_FLAGS += -DLLVM_BUILD_TESTS=True
+COMMON_CMAKE_FLAGS += -DDEFAULT_SYSROOT=$(ISP_PREFIX)/riscv32-unknown-elf
+COMMON_CMAKE_FLAGS += -DLLVM_DEFAULT_TARGET_TRIPLE="riscv32-unknown-elf"
+COMMON_CMAKE_FLAGS += -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="RISCV"
+COMMON_CMAKE_FLAGS += -DLLVM_TARGETS_TO_BUILD=""
+
+DEBUG_CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Debug
+DEBUG_CMAKE_FLAGS += -DLLVM_ENABLE_ASSERTIONS=ON
+DEBUG_CMAKE_FLAGS += -DCMAKE_C_FLAGS=-fstandalone-debug
+DEBUG_CMAKE_FLAGS += -DCMAKE_CXX_FLAGS=-fstandalone-debug
+
+RELEASE_CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Release
+
+debug-build/build.ninja: CMAKE_FLAGS := $(COMMON_CMAKE_FLAGS) $(DEBUG_CMAKE_FLAGS)
+
+release-build/build.ninja: CMAKE_FLAGS := $(COMMON_CMAKE_FLAGS) $(RELEASE_CMAKE_FLAGS)
+
+all: $(BUILD_TYPE)
+
+$(BUILD_TYPE): $(BUILD_TYPE)-build/build.ninja
+	$(NINJA) -C $(BUILD_TYPE)-build
+
+$(BUILD_TYPE)-build/build.ninja:
+	$(RM) -r $(BUILD_TYPE)-build
+	mkdir -p $(BUILD_TYPE)-build
+	cd $(BUILD_TYPE)-build; cmake $(CMAKE_FLAGS) ../llvm
+
+install: $(BUILD_TYPE)-install
+
+debug-install release-install: %-install: $*
+	$(NINJA) -C $*-build install
+
+clean:
+	$(RM) -r debug-build
+	$(RM) -r release-build
