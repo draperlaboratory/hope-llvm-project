@@ -61,6 +61,9 @@ add_llvm_component_library(LLVMMC
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/MC
+
+  DEPENDS
+  attributes_gen
   )
 
 add_subdirectory(MCParser)
