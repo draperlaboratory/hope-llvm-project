@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+apt-get update
+
+apt-get install -y \
+        binutils-dev \
+        build-essential \
+        clang \
+        cmake \
+        unzip \
+        wget  \
+        zlib1g-dev
+
+ninja_check() {
+    md5sum --quiet -c <<< "540b5a37ac9d822b07179ec1771855ae $HOME/.local/bin/ninja"
+}
+
+if [ -f $HOME/.local/bin/ninja ]; then
+    ninja_check
+else
+    wget https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip
+    unzip -o ninja-linux.zip
+    mkdir -p $HOME/.local/bin
+    mv ninja $HOME/.local/bin
+    rm ninja-linux.zip
+    ninja_check
+fi

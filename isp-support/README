@@ -1,0 +1,26 @@
+Best results obtained by using the gold linker.  Your ld is likely a symlink, 
+point it at ld.gold
+
+Be sure to clone recursively
+
+To build the llvm riscv cross compiler first make sure that you have a riscv
+toolchain installed.  I worked with the instructions here for a clean riscv
+toolchain:
+
+https://github.com/lowRISC/riscv-llvm
+
+Then run the configure script.  I *strongly* recommend you let it install the
+same version of cmake and ninja that I was using (the latest release as of May
+22, 2018).  It will also ask you for the base path to the riscv toolchain.  This
+will enable the cross compiler to actually work, and is where the cross compiler
+will get installed.
+
+./configure.sh
+
+After that, you can build either the debug or release version.  I have been
+working with the debug version during development, and strongly recommend it.
+The release version is currently *untested* and *unsupported*.  
+
+cd debug-build
+ninja
+ninja install
