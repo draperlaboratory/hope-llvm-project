@@ -54,58 +54,59 @@ static void setMIFlags(MachineInstr *MI) {
   
 bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
-  for (auto &MBB : MF) {
+    for (auto &MBB : MF) {
 
-    // check first instruction
-    auto MI = MBB.getFirstNonDebugInstr();
-    setMIFlags(&*MI);
-    if ( MI == MBB.end() )
-      continue;
+        // check first instruction
+        auto MI = MBB.getFirstNonDebugInstr();
+        if ( MI == MBB.end() )
+            continue;
 
-    MBB.getSymbol()->modifyFlags((&MBB == &*MF.begin() ?
-				  MachineInstr::CallTarget :
-				  MachineInstr::BranchTarget),
-				 0);
+        MBB.getSymbol()->modifyFlags((&MBB == &*MF.begin() ?
+                    MachineInstr::CallTarget :
+                    MachineInstr::BranchTarget),
+                0);
 
-    for(auto &pred : MBB.predecessors()){
-      const auto &last = pred->getLastNonDebugInstr();
-      if(last != pred->end()) {
-	if(last->isCall()) {
-	  MI->setFlag(MachineInstr::ReturnTarget);
-	}
-	if(last->isBranch())
-	  MI->setFlag(MachineInstr::BranchTarget);
-      }
+        setMIFlags(&*MI);
+
+        for(auto &pred : MBB.predecessors()){
+            const auto &last = pred->getLastNonDebugInstr();
+            if(last != pred->end()) {
+                if(last->isCall()) {
+                    MI->setFlag(MachineInstr::ReturnTarget);
+                }
+                if(last->isBranch())
+                    MI->setFlag(MachineInstr::BranchTarget);
+            }
+        }
+
+        // check all other instructions
+
+        auto last = MI;
+        for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
+
+            setMIFlags(&*MI);
+
+            //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
+            //wasn't obvious how to call it, so here's this unmaintable approach
+            switch(MI->getOpcode()){
+                case TargetOpcode::EH_LABEL:
+                case TargetOpcode::IMPLICIT_DEF:
+                case TargetOpcode::KILL:
+                case TargetOpcode::DBG_VALUE:
+                    continue;
+                default:  //do nothing
+                    break;  //breaks the switch not the loop
+            }
+
+            if(last->isCall())
+                MI->setFlag(MachineInstr::ReturnTarget);
+
+            if(last->isBranch())
+                MI->setFlag(MachineInstr::BranchTarget);
+
+            last = MI;
+        }
     }
-
-    // check all other instructions
-    
-    auto last = MI;
-    for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
-
-      setMIFlags(&*MI);
-      
-      //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
-      //wasn't obvious how to call it, so here's this unmaintable approach
-      switch(MI->getOpcode()){
-        case TargetOpcode::EH_LABEL:
-        case TargetOpcode::IMPLICIT_DEF:
-        case TargetOpcode::KILL:
-        case TargetOpcode::DBG_VALUE:
-	  continue;
-        default:  //do nothing
-          break;  //breaks the switch not the loop
-      }
-
-      if(last->isCall())
-	MI->setFlag(MachineInstr::ReturnTarget);
-
-      if(last->isBranch())
-	MI->setFlag(MachineInstr::BranchTarget);
-
-      last = MI;
-    }
-  }
 
   return false;
 }
