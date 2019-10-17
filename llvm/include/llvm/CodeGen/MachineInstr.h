@@ -314,9 +314,9 @@ public:
     Flags |= (MachineInstrFlags_t)Flag;
   }
 
-  void setFlags(unsigned flags) {
+  void setFlags(MachineInstrFlags_t flags) {
     // Filter out the automatically maintained flags.
-    unsigned Mask = BundledPred | BundledSucc;
+    MachineInstrFlags_t  Mask = BundledPred | BundledSucc;
     Flags = (Flags & Mask) | (flags & ~Mask);
   }
 
@@ -1567,7 +1567,7 @@ public:
   /// not modify the MIFlags of this MachineInstr.
   MachineInstrFlags_t mergeFlagsWith(const MachineInstr& Other) const;
 
-  static uint16_t copyFlagsFromInstruction(const Instruction &I);
+  static MachineInstrFlags_t copyFlagsFromInstruction(const Instruction &I);
 
   /// Copy all flags to MachineInst MIFlags
   void copyIRFlags(const Instruction &I);

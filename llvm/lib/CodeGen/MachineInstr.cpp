@@ -519,8 +519,8 @@ MachineInstrFlags_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) cons
   return getFlags() | Other.getFlags();
 }
 
-uint16_t MachineInstr::copyFlagsFromInstruction(const Instruction &I) {
-  uint16_t MIFlags = 0;
+MachineInstrFlags_t MachineInstr::copyFlagsFromInstruction(const Instruction &I) {
+  MachineInstrFlags_t MIFlags = 0;
   // Copy the wrapping flags.
   if (const OverflowingBinaryOperator *OB =
           dyn_cast<OverflowingBinaryOperator>(&I)) {
