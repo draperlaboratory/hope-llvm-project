@@ -46,9 +46,9 @@ static void setMIFlags(MachineInstr *MI) {
     MI->setFlag(MachineInstr::FnEpilog);
   }
   else if ( MI->isCall() )
-    MI->setFlag(MachineInstr::IsCall);
+    MI->setFlags(MachineInstr::IsCall);
   else if ( MI->isBranch() )
-    MI->setFlag(MachineInstr::IsBranch);
+    MI->setFlags(MachineInstr::IsBranch);
   
 }
   
