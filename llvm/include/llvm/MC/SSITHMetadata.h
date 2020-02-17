@@ -150,6 +150,6 @@ on any given address.
 #define DMT_BRANCH_INSTR 9u
 #define DMT_FPTR_CREATE_AUTHORITY 10u
 #define DMT_ARITY_ZERO 11u
-#define DMT_ARITY_ONE 11u
-#define DMT_ARITY_MANY 11u
+#define DMT_ARITY_ONE 12u
+#define DMT_ARITY_MANY 13u
 #endif
