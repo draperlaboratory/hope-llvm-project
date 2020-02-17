@@ -1078,7 +1078,19 @@ void AsmPrinter::EmitFunctionBody() {
         if(NumInstsInFunction == 1){
           OutStreamer->PushSection();
           OutStreamer->SwitchSection(ISP);
+
+          // ThreeClass
           EmitSSITHMetadataInst(CurrentFnSym, getSubtargetInfo(), DMT_CFI3L_VALID_TGT);
+          // TestGen FunctionArity
+          uint32_t arity = MF->getFunction().getFunctionType()->getNumParams();
+          % printf("ARITY CHECK (%s): %d\n",MF->getFunction().getName(),arity);
+          uint8_t arity_tag = DMT_ARITY_MANY;
+          if (arity==1) {
+            arity_tag = DMT_ARITY_ONE;
+          } else if (arity==0) {
+            arity_tag = DMT_ARITY_ZERO;
+          }
+          EmitSSITHMetadataInst(CurrentFnSym, getSubtargetInfo(), arity_tag);
           OutStreamer->PopSection();
         }
       }
