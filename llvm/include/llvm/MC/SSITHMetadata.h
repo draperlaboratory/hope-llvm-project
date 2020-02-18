@@ -152,4 +152,6 @@ on any given address.
 #define DMT_ARITY_ZERO 11u
 #define DMT_ARITY_ONE 12u
 #define DMT_ARITY_MANY 13u
+#define DMT_VARARGS_INIT 14u
+#define DMT_VARARGS_COPY 15u
 #endif

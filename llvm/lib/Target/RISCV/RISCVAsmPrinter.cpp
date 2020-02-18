@@ -143,7 +143,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     LowerRISCVMachineInstrToMCInst(MI, TmpInst, *this);
     EmitToStreamer(*OutStreamer, TmpInst);
   }
-    
+
   char *tmp = OutStreamer->SSITHpopLastInstruction(4);
   InstSym = OutContext.createTempSymbol();
   OutStreamer->EmitLabel(InstSym);
@@ -236,7 +236,12 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   //Tag branch instruction for 3 class CFI policy
   else if(MI->isBranch())
     EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_BRANCH_INSTR);
- 
+
+  if(MI->getFlag(MachineInstr::VarArgsInit))
+    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_VARARGS_INIT);
+  if(MI->getFlag(MachineInstr::VarArgsCopy))
+    EmitSSITHMetadataInst(InstSym, getSubtargetInfo(), DMT_VARARGS_COPY);
+
   //whether its a tail call or a return (handled separately above) do this
   if(MI->isReturn())
     EmitSSITHMetadataFnRange(CurrentFnSym, InstSym, getSubtargetInfo());
@@ -250,6 +255,7 @@ void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     MCSymbol *Tgt = PriorInstSym ? PriorInstSym : InstSym;
     EmitSSITHMetadataInst(Tgt, getSubtargetInfo(), DMT_BRANCH_VALID_TGT);
   }
+
   //Restore the previous section
   OutStreamer->PopSection();
 

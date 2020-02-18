@@ -370,6 +370,13 @@ private:
   bool FPtrCreate : 1;
   bool FPtrStore : 1;
 
+  // SSITH: "Init" is for instructions in the calling function that
+  // initialize registers/memory to hold varargs.  "Copy" is for the
+  // prelude of the varargs functions that sticks these varargs from
+  // registers into an array for use with the varargs macros.
+  bool VarArgsInit : 1;
+  bool VarArgsCopy : 1;
+
 public:
   /// Default constructor turns off all optimization flags.
   SDNodeFlags()
@@ -377,7 +384,8 @@ public:
         Exact(false), NoNaNs(false), NoInfs(false),
         NoSignedZeros(false), AllowReciprocal(false), VectorReduction(false),
         AllowContract(false), ApproximateFuncs(false),
-        AllowReassociation(false), FPtrCreate(false), FPtrStore(false) {}
+        AllowReassociation(false), FPtrCreate(false), FPtrStore(false),
+        VarArgsInit(false),VarArgsCopy(false) {}
 
   /// Propagate the fast-math-flags from an IR FPMathOperator.
   void copyFMF(const FPMathOperator &FPMO) {
@@ -448,6 +456,14 @@ public:
     setDefined();
     FPtrStore = b;
   }
+  void setVarArgsInit(bool b) {
+    setDefined();
+    VarArgsInit = b;
+  }
+  void setVarArgsCopy(bool b) {
+    setDefined();
+    VarArgsCopy = b;
+  }
 
   // These are accessors for each flag.
   bool hasNoUnsignedWrap() const { return NoUnsignedWrap; }
@@ -463,6 +479,8 @@ public:
   bool hasAllowReassociation() const { return AllowReassociation; }
   bool hasFPtrCreate() const { return FPtrCreate; }
   bool hasFPtrStore() const { return FPtrStore; }
+  bool hasVarArgsInit() const { return VarArgsInit; }
+  bool hasVarArgsCopy() const { return VarArgsCopy; }
 
   bool isFast() const {
     return NoSignedZeros && AllowReciprocal && NoNaNs && NoInfs &&
@@ -487,6 +505,8 @@ public:
     AllowReassociation &= Flags.AllowReassociation;
     FPtrCreate &= Flags.FPtrCreate;
     FPtrStore &= Flags.FPtrStore;
+    VarArgsInit &= Flags.VarArgsInit;
+    VarArgsCopy &= Flags.VarArgsCopy;
   }
 };
 

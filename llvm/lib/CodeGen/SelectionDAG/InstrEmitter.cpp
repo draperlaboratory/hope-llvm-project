@@ -38,6 +38,30 @@ using namespace llvm;
 /// instead.
 const unsigned MinRCSize = 4;
 
+// SSITH: We have moved this into its own function because we were previously
+// only doing it at one of the places MachineInstructions can be created, and
+// missing some key ones.  We're definitely still missing some!
+void copySSITHFlagsToMI(SDNode* node, MachineInstrBuilder* MIB) {
+  SDNodeFlags Flags = node->getFlags();
+  if(Flags.hasFPtrCreate()){
+    MIB->getInstr()->setFlag(MachineInstr::FPtrCreate);
+  }
+  else if(Flags.hasFPtrStore()){
+    MIB->getInstr()->setFlag(MachineInstr::FPtrStore);
+    //errs() << "fptr store in instremitter\n";
+    //Node->dump();
+    //errs() << Node << "\n";
+    //if(Node->isMachineOpcode())
+    //  errs() << "has machine opcode\n";
+    //errs() << "--------------\n";
+  }
+  if(Flags.hasVarArgsInit())
+    MIB->getInstr()->setFlag(MachineInstr::VarArgsInit);
+  if(Flags.hasVarArgsCopy())
+    MIB->getInstr()->setFlag(MachineInstr::VarArgsCopy);
+
+}
+
 /// CountResults - The results of target nodes have register or immediate
 /// operands first, then an optional chain, and optional glue operands (which do
 /// not go into the resulting MachineInstr).
@@ -174,8 +198,10 @@ EmitCopyFromReg(SDNode *Node, unsigned ResNo, bool IsClone, bool IsCloned,
   } else {
     // Create the reg, emit the copy.
     VRBase = MRI->createVirtualRegister(DstRC);
-    BuildMI(*MBB, InsertPos, Node->getDebugLoc(), TII->get(TargetOpcode::COPY),
-            VRBase).addReg(SrcReg);
+    MachineInstrBuilder MIB = BuildMI(*MBB, InsertPos, Node->getDebugLoc(),
+                                      TII->get(TargetOpcode::COPY),
+                                      VRBase).addReg(SrcReg);
+    copySSITHFlagsToMI(Node,&MIB);
   }
 
   SDValue Op(Node, ResNo);
@@ -861,24 +887,12 @@ EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
 
   // Create the new machine instruction.
   MachineInstrBuilder MIB = BuildMI(*MF, Node->getDebugLoc(), II);
-  
-  //SSITH TODO - Tag the new instruction
+
+  //SSITH - Tag the new instruction
+  copySSITHFlagsToMI(Node, &MIB);
+
   if(isa<StoreSDNode>(Node))
     errs() << "storesdnode in instremitter\n";
-
-  SDNodeFlags Flags = Node->getFlags();
-  if(Flags.hasFPtrCreate()){
-    MIB.getInstr()->setFlag(MachineInstr::FPtrCreate);
-  }
-  else if(Flags.hasFPtrStore()){
-    MIB.getInstr()->setFlag(MachineInstr::FPtrStore);
-    //errs() << "fptr store in instremitter\n";
-    //Node->dump();
-    //errs() << Node << "\n";
-    //if(Node->isMachineOpcode())
-    //  errs() << "has machine opcode\n";
-    //errs() << "--------------\n";
-  }
 
   // Add result register values for things that are defined by this
   // instruction.
@@ -1040,8 +1054,11 @@ EmitSpecialNode(SDNode *Node, bool IsClone, bool IsCloned,
     if (SrcReg == DestReg) // Coalesced away the copy? Ignore.
       break;
 
-    BuildMI(*MBB, InsertPos, Node->getDebugLoc(), TII->get(TargetOpcode::COPY),
+    auto MIB =
+      BuildMI(*MBB, InsertPos, Node->getDebugLoc(), TII->get(TargetOpcode::COPY),
             DestReg).addReg(SrcReg);
+    copySSITHFlagsToMI(Node, &MIB);
+
     break;
   }
   case ISD::CopyFromReg: {
@@ -1055,8 +1072,9 @@ EmitSpecialNode(SDNode *Node, bool IsClone, bool IsCloned,
                        ? TargetOpcode::EH_LABEL
                        : TargetOpcode::ANNOTATION_LABEL;
     MCSymbol *S = cast<LabelSDNode>(Node)->getLabel();
-    BuildMI(*MBB, InsertPos, Node->getDebugLoc(),
-            TII->get(Opc)).addSym(S);
+    MachineInstrBuilder MIB = BuildMI(*MBB, InsertPos, Node->getDebugLoc(),
+                                            TII->get(Opc)).addSym(S);
+    copySSITHFlagsToMI(Node, &MIB);
     break;
   }
 

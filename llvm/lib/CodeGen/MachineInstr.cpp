@@ -2010,6 +2010,7 @@ MachineInstrBuilder llvm::BuildMI(MachineFunction &MF, const DebugLoc &DL,
   assert(cast<DILocalVariable>(Variable)->isValidLocationForIntrinsic(DL) &&
          "Expected inlined-at fields to agree");
   auto MIB = BuildMI(MF, DL, MCID).addReg(Reg, RegState::Debug);
+
   if (IsIndirect)
     MIB.addImm(0U);
   else

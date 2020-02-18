@@ -1647,6 +1647,13 @@ SDValue RISCVTargetLowering::LowerFormalArguments(
       cast<StoreSDNode>(Store.getNode())
           ->getMemOperand()
           ->setValue((Value *)nullptr);
+
+      // SSITH - this store node copies the vararg to the vararg save area
+      SDNode* storeNode = Store.getNode();
+      SDNodeFlags flags = storeNode->getFlags();
+      flags.setVarArgsCopy(true);
+      storeNode->setFlags(flags);
+
       OutChains.push_back(Store);
     }
     RVFI->setVarArgsSaveSize(VarArgsSaveSize);
@@ -1906,9 +1913,33 @@ SDValue RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
 
   SDValue Glue;
 
+
   // Build a sequence of copy-to-reg nodes, chained and glued together.
   for (auto &Reg : RegsToPass) {
     Chain = DAG.getCopyToReg(Chain, DL, Reg.first, Reg.second, Glue);
+    Reg.second.dump();
+
+    // SSITH CJC: This currently does not work.  I believe the problem is that
+    // the thing we are tagging here is a "CopyToReg" pseudo-instruction, and
+    // it either (a) gets optimized away because it's not really the thing
+    // that sets up the args, or (b) when it gets turned into a real
+    // instruction we're not propogating the tags.  I found an alternate
+    // solution for this policy for now, but am leaving this in with the
+    // intent to come back.
+    //
+    // SSITH CJC: I don't totally understand this chain and glue stuff.  The
+    // goal here is to tag the instructions that initialize arguments for
+    // varargs functions.  Even in the best case I'm being very sloppy: (a) I
+    // really should tag _only_ the varargs register, not every register
+    // (which I think this does) and (b) I'm missing any args that get passed
+    // in memory.  So this is just barely a proof-of-concept for now
+    if(IsVarArg) {
+      SDNode* node = Chain.getNode();
+      SDNodeFlags flags = node->getFlags();
+      flags.setVarArgsInit(true);
+      node->setFlags(flags);
+    }
+
     Glue = Chain.getValue(1);
   }
 
@@ -1992,6 +2023,14 @@ SDValue RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
     InVals.push_back(RetValue);
   }
 
+  // SSITH set all call instructions with the init flag
+  if(IsVarArg) {
+    for(SDNode n : DAG.allnodes()) {
+      SDNodeFlags flags = n.getFlags();
+      flags.setVarArgsInit(true);
+      n.setFlags(flags);
+    }
+  }
   return Chain;
 }
 
