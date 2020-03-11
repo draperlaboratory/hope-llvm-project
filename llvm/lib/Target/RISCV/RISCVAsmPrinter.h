@@ -17,10 +17,14 @@
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/ADT/Statistic.h"
 
 #define DEBUG_TYPE "asm-printer"
 
 using namespace llvm;
+
+STATISTIC(RISCVNumInstrsCompressed,
+          "Number of RISC-V Compressed instructions emitted");
 
 class RISCVAsmPrinter : public AsmPrinter {
 public:
