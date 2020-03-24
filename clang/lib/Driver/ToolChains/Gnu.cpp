@@ -1527,10 +1527,10 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
   };
   // currently only support the set of multilibs like riscv-gnu-toolchain does.
   // TODO: support MULTILIB_REUSE
-  SmallVector<RiscvMultilib, 8> RISCVMultilibSet = {
+  SmallVector<RiscvMultilib, 10> RISCVMultilibSet = {
       {"rv32i", "ilp32"},     {"rv32im", "ilp32"},     {"rv32iac", "ilp32"},
-      {"rv32imac", "ilp32"},  {"rv32imafc", "ilp32f"}, {"rv64imac", "lp64"},
-      {"rv64imafdc", "lp64d"}};
+      {"rv32imac", "ilp32"},  {"rv32ima", "ilp32"},    {"rv32imafc", "ilp32f"},
+      {"rv64imac", "lp64"},   {"rv64imafd", "lp64d"},  {"rv64imafdc", "lp64d"}};
 
   std::vector<Multilib> Ms;
   for (auto Element : RISCVMultilibSet) {
