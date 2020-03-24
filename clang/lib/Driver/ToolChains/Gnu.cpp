@@ -1557,11 +1557,15 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
   StringRef ABIName = tools::riscv::getRISCVABI(Args, TargetTriple);
   StringRef MArch = tools::riscv::getRISCVArch(Args, TargetTriple);
   for (auto Element : RISCVMultilibSet) {
-    addMultilibFlag(MArch == Element.march,
+      bool MarchEnabled = (MArch == Element.march || "rv32ima" == Element.march
+                           || "rv64imafd" == Element.march);
+      bool MabiEnabled = (ABIName == Element.mabi || "lp64d" == Element.mabi
+                          || "ilp32" == Element.mabi);
+      addMultilibFlag(MarchEnabled,
                     Twine("march=", Element.march).str().c_str(), Flags);
     if (!Added_ABIs.count(Element.mabi)) {
       Added_ABIs.insert(Element.mabi);
-      addMultilibFlag(ABIName == Element.mabi,
+      addMultilibFlag(MabiEnabled,
                       Twine("mabi=", Element.mabi).str().c_str(), Flags);
     }
   }
