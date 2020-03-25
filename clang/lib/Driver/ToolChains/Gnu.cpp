@@ -1521,6 +1521,9 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
                                         StringRef Path, const ArgList &Args,
                                         DetectedMultilibs &Result) {
   FilterNonExistent NonExistent(Path, "/crtbegin.o", D.getVFS());
+  StringRef ABIName = tools::riscv::getRISCVABI(Args, TargetTriple);
+  StringRef MArch = tools::riscv::getRISCVArch(Args, TargetTriple);
+
   struct RiscvMultilib {
     StringRef march;
     StringRef mabi;
@@ -1535,8 +1538,15 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
   std::vector<Multilib> Ms;
   for (auto Element : RISCVMultilibSet) {
     // multilib path rule is ${march}/${mabi}
+    int multilib_priority = 0;
+    if (MArch.contains_lower(Element.march) &&
+        ABIName.contains_lower(Element.mabi)) {
+        multilib_priority = 1;
+    }
+
     Ms.emplace_back(
-        makeMultilib((Twine(Element.march) + "/" + Twine(Element.mabi)).str())
+        makeMultilib((Twine(Element.march) + "/" + Twine(Element.mabi)).str(),
+                     multilib_priority)
             .flag(Twine("+march=", Element.march).str())
             .flag(Twine("+mabi=", Element.mabi).str()));
   }
@@ -1554,8 +1564,6 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
 
   Multilib::flags_list Flags;
   llvm::StringSet<> Added_ABIs;
-  StringRef ABIName = tools::riscv::getRISCVABI(Args, TargetTriple);
-  StringRef MArch = tools::riscv::getRISCVArch(Args, TargetTriple);
   for (auto Element : RISCVMultilibSet) {
       bool MarchEnabled = (MArch == Element.march || "rv32ima" == Element.march
                            || "rv64imafd" == Element.march);
