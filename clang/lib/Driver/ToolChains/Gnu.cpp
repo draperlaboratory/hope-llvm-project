@@ -950,8 +950,8 @@ static bool isMSP430(llvm::Triple::ArchType Arch) {
   return Arch == llvm::Triple::msp430;
 }
 
-static Multilib makeMultilib(StringRef commonSuffix) {
-  return Multilib(commonSuffix, commonSuffix, commonSuffix);
+static Multilib makeMultilib(StringRef commonSuffix, int Priority = 0) {
+    return Multilib(commonSuffix, commonSuffix, commonSuffix, Priority);
 }
 
 static bool findMipsCsMultilibs(const Multilib::flags_list &Flags,
