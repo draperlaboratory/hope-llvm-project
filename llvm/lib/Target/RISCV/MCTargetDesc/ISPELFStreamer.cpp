@@ -37,8 +37,6 @@ void ISPTargetELFStreamer::EmitSSITHMetadataHeader(MCObjectStreamer &Streamer){
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
 
-  printf("emitting metadata header!\n");
-  
   //Emit the Metadata tag
   uint8_t MD = DMD_SET_BASE_ADDRESS_OP;
   support::endian::write(VecOS, MD, support::little);

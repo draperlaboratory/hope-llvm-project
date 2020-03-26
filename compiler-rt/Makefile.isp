@@ -1,0 +1,65 @@
+.PHONY: all
+.PHONY: install
+.PHONY: clean
+.PHONY: rv32 rv64
+
+export ISP_PREFIX ?= $(HOME)/.local/isp/
+
+NINJA := ninja
+
+COMMON_FLAGS += -G "Ninja"
+COMMON_FLAGS += -DCMAKE_C_COMPILER=$(ISP_PREFIX)/bin/clang
+COMMON_FLAGS += -DCMAKE_CXX_COMPILER=$(ISP_PREFIX)/bin/clang++
+COMMON_FLAGS += -DCMAKE_AR=$(ISP_PREFIX)/bin/llvm-ar
+COMMON_FLAGS += -DCMAKE_NM=$(ISP_PREFIX)/bin/llvm-nm
+COMMON_FLAGS += -DCMAKE_RANLIB=$(ISP_PREFIX)/bin/llvm-ranlib
+COMMON_FLAGS += -DCMAKE_INSTALL_PREFIX=$(ISP_PREFIX)
+COMMON_FLAGS += -DCMAKE_VERBOSE_MAKEFILE=ON
+COMMON_FLAGS += -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld"
+COMMON_FLAGS += -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
+COMMON_FLAGS += -DCOMPILER_RT_OS_DIR=baremetal -DCOMPILER_RT_BAREMETAL_BUILD=ON
+COMMON_FLAGS += -DCOMPILER_RT_BUILD_SANITIZERS=OFF -DCOMPILER_RT_BUILD_XRAY=OFF
+COMMON_FLAGS += -DCOMPILER_RT_BUILD_LIBFUZZER=OFF -DCOMPILER_RT_BUILD_PROFILE=OFF
+
+RV32_TARGET_FLAGS += --target=riscv32-unknown-elf -march=rv32ima -mabi=ilp32
+RV32_TARGET_FLAGS += -mno-relax
+RV32_FLAGS += -DCMAKE_C_FLAGS=$(RV32_TARGET_FLAGS)
+RV32_FLAGS += -DCMAKE_CXX_FLAGS=$(RV32_TARGET_FLAGS)
+RV32_FLAGS += -DCMAKE_ASM_FLAGS=$(RV32_TARGET_FLAGS)
+RV32_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_ARCH=riscv32
+RV32_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=riscv32-unknown-elf
+RV32_FLAGS += -DCMAKE_SYSROOT=$(ISP_PREFIX)/clang_sysroot/riscv32-unknown-elf
+
+RV64_TARGET_FLAGS += --target=riscv64-unknown-elf -march=rv64imafd -mabi=lp64d
+RV64_TARGET_FLAGS += -mno-relax -mcmodel=medany
+RV64_FLAGS += -DCMAKE_C_FLAGS=$(RV64_TARGET_FLAGS)
+RV64_FLAGS += -DCMAKE_CXX_FLAGS=$(RV64_TARGET_FLAGS)
+RV64_FLAGS += -DCMAKE_ASM_FLAGS=$(RV64_TARGET_FLAGS)
+RV64_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_ARCH=riscv64
+RV64_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=riscv64-unknown-elf
+RV64_FLAGS += -DCMAKE_SYSROOT=$(ISP_PREFIX)/clang_sysroot/riscv64-unknown-elf
+
+all: rv32 rv64
+
+rv32: build32/build.ninja
+	$(NINJA) -v -C build32
+
+rv64: build64/build.ninja
+	$(NINJA) -v -C build64
+
+build32/build.ninja:
+	mkdir -p build32
+	cd build32; cmake $(COMMON_FLAGS) $(RV32_FLAGS) ..
+
+build64/build.ninja:
+	mkdir -p build64
+	cd build64; cmake $(COMMON_FLAGS) $(RV64_FLAGS) ..
+
+install:
+	$(NINJA) -v -C build32 install
+	$(NINJA) -v -C build64 install
+	mkdir -p $(ISP_PREFIX)/lib/clang/11.0.0/lib
+	cp $(ISP_PREFIX)/lib/baremetal/* $(ISP_PREFIX)/lib/clang/11.0.0/lib
+
+clean:
+	$(RM) -r build32 build64
