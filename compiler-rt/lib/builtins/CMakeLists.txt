@@ -645,7 +645,12 @@ else ()
       # double routines.
       if("${arch}" STREQUAL "riscv32")
         list(APPEND BUILTIN_CFLAGS -fforce-enable-int128)
+        list(APPEND BUILTIN_CFLAGS -march=rv32ima -mabi=ilp32)
       endif()
+      if("${arch}" STREQUAL "riscv64")
+        list(APPEND BUILTIN_CFLAGS -march=rv64imafd -mabi=lp64d)
+      endif()
+      list(APPEND BUILTIN_CFLAGS -mno-relax)
 
       add_compiler_rt_runtime(clang_rt.builtins
                               STATIC
