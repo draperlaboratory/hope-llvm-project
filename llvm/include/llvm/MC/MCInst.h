@@ -160,19 +160,40 @@ class MCInst {
   // These flags could be used to pass some info from one target subcomponent
   // to another, for example, from disassembler to asm printer. The values of
   // the flags have any sense on target level only (e.g. prefixes on x86).
-  unsigned Flags = 0;
+  enum : unsigned { NumFlagsBits = 31 };
+  mutable uint32_t Flags : NumFlagsBits;
 
   SMLoc Loc;
   SmallVector<MCOperand, 8> Operands;
 
 public:
+  /// Get the (implementation defined) symbol flags.
+  uint32_t getFlags() const { return Flags; }
+
+  /// Set the (implementation defined) symbol flags.
+  void setFlags(uint32_t Value) const {
+    assert(Value < (1U << NumFlagsBits) && "Out of range flags");
+    Flags = Value;
+  }
+
+  /// Modify the flags via a mask
+  void modifyFlags(uint32_t Value, uint32_t Mask) const {
+    assert(Value < (1U << NumFlagsBits) && "Out of range flags");
+    Flags = (Flags & ~Mask) | Value;
+  }
+
+  void setFlag(uint32_t Value) const {
+    modifyFlags(Value, 0);
+  }
+
+  bool getFlag(uint32_t Flag) const {
+    return Flags & Flag;
+  }
+
   MCInst() = default;
 
   void setOpcode(unsigned Op) { Opcode = Op; }
   unsigned getOpcode() const { return Opcode; }
-
-  void setFlags(unsigned F) { Flags = F; }
-  unsigned getFlags() const { return Flags; }
 
   void setLoc(SMLoc loc) { Loc = loc; }
   SMLoc getLoc() const { return Loc; }

@@ -121,7 +121,7 @@ protected:
 
   /// The Flags field is used by object file implementations to store
   /// additional per symbol information which is not easily classified.
-  enum : unsigned { NumFlagsBits = 16 };
+  enum : unsigned { NumFlagsBits = 31 };
   mutable uint32_t Flags : NumFlagsBits;
 
   /// Index field, for use by the object file implementation.
@@ -406,7 +406,6 @@ public:
   /// dump - Print the value to stderr.
   void dump() const;
 
-protected:
   /// Get the (implementation defined) symbol flags.
   uint32_t getFlags() const { return Flags; }
 
@@ -421,6 +420,15 @@ protected:
     assert(Value < (1U << NumFlagsBits) && "Out of range flags");
     Flags = (Flags & ~Mask) | Value;
   }
+
+  void setFlag(uint32_t Value) const {
+    modifyFlags(Value, 0);
+  }
+
+  bool getFlag(uint32_t Flag) const {
+    return Flags & Flag;
+  }
+
 };
 
 inline raw_ostream &operator<<(raw_ostream &OS, const MCSymbol &Sym) {

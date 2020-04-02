@@ -19,6 +19,7 @@
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionWasm.h"
 #include "llvm/MC/MCSectionXCOFF.h"
+#include "llvm/MC/SSITHMetadata.h"
 
 using namespace llvm;
 
@@ -489,6 +490,12 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
       Ctx->getELFSection(".eh_frame", EHSectionType, EHSectionFlags);
 
   StackSizesSection = Ctx->getELFSection(".stack_sizes", ELF::SHT_PROGBITS, 0);
+
+  RemarksSection =
+      Ctx->getELFSection(".remarks", ELF::SHT_PROGBITS, ELF::SHF_EXCLUDE);
+
+  ISPMetadataSection =
+    Ctx->getELFSection(ISP_METADATA_ELF_SECTION_NAME, ELF::SHT_PROGBITS, 0);
 }
 
 void MCObjectFileInfo::initCOFFMCObjectFileInfo(const Triple &T) {
@@ -836,6 +843,8 @@ void MCObjectFileInfo::InitMCObjectFileInfo(const Triple &TheTriple, bool PIC,
   DwarfAccelObjCSection = nullptr;      // Used only by selected targets.
   DwarfAccelNamespaceSection = nullptr; // Used only by selected targets.
   DwarfAccelTypesSection = nullptr;     // Used only by selected targets.
+
+  ISPMetadataSection = nullptr;
 
   TT = TheTriple;
 

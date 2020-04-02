@@ -28,49 +28,19 @@
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
-using namespace llvm;
-
-#define DEBUG_TYPE "asm-printer"
-
-STATISTIC(RISCVNumInstrsCompressed,
-          "Number of RISC-V Compressed instructions emitted");
-
-namespace {
-class RISCVAsmPrinter : public AsmPrinter {
-public:
-  explicit RISCVAsmPrinter(TargetMachine &TM,
-                           std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)) {}
-
-  StringRef getPassName() const override { return "RISCV Assembly Printer"; }
-
-  void EmitInstruction(const MachineInstr *MI) override;
-
-  bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                       const char *ExtraCode, raw_ostream &OS) override;
-  bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
-                             const char *ExtraCode, raw_ostream &OS) override;
-
-  void EmitToStreamer(MCStreamer &S, const MCInst &Inst);
-  bool emitPseudoExpansionLowering(MCStreamer &OutStreamer,
-                                   const MachineInstr *MI);
-
-  // Wrapper needed for tblgenned pseudo lowering.
-  bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp) const {
-    return LowerRISCVMachineOperandToMCOperand(MO, MCOp, *this);
-  }
-};
-}
+#include "RISCVAsmPrinter.h"
 
 #define GEN_COMPRESS_INSTR
 #include "RISCVGenCompressInstEmitter.inc"
-void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
+bool RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
   MCInst CInst;
   bool Res = compressInst(CInst, Inst, *TM.getMCSubtargetInfo(),
                           OutStreamer->getContext());
   if (Res)
     ++RISCVNumInstrsCompressed;
   AsmPrinter::EmitToStreamer(*OutStreamer, Res ? CInst : Inst);
+
+  return Res;
 }
 
 // Simple pseudo-instructions have their lowering (with expansion to real
@@ -155,7 +125,7 @@ bool RISCVAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
 }
 
 // Force static initialization.
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVAsmPrinter() {
-  RegisterAsmPrinter<RISCVAsmPrinter> X(getTheRISCV32Target());
-  RegisterAsmPrinter<RISCVAsmPrinter> Y(getTheRISCV64Target());
-}
+//extern "C" void LLVMInitializeRISCVAsmPrinter() {
+//  RegisterAsmPrinter<RISCVAsmPrinter> X(getTheRISCV32Target());
+//  RegisterAsmPrinter<RISCVAsmPrinter> Y(getTheRISCV64Target());
+//}

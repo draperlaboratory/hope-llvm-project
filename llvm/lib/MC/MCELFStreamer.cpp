@@ -291,6 +291,8 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolELF>(S);
   getAssembler().registerSymbol(*Symbol);
 
+  MCObjectStreamer::EmitCommonSymbol(S, Size, ByteAlignment);
+
   if (!Symbol->isBindingSet()) {
     Symbol->setBinding(ELF::STB_GLOBAL);
     Symbol->setExternal(true);

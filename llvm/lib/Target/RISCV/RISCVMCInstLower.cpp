@@ -134,4 +134,6 @@ void llvm::LowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
     if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
       OutMI.addOperand(MCOp);
   }
+
+  OutMI.setFlags(MI->getFlags());
 }

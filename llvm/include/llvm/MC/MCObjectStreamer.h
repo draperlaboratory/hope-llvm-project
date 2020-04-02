@@ -124,6 +124,8 @@ public:
   void EmitWeakReference(MCSymbol *Alias, const MCSymbol *Symbol) override;
   void ChangeSection(MCSection *Section, const MCExpr *Subsection) override;
   void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) override;
+  void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+			unsigned ByteAlignment) override;
 
   /// Emit an instruction to a special fragment, because this instruction
   /// can change its size during relaxation.

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+version=`ninja --version`;
+check="1.8.2";
+winner=`echo -e "${version}\n${check}" | sort -nr | head -1`;
+if [[ "${winner}" = "${version}" ]]; then
+    echo "System ninja is new enough"
+    exit 0
+else
+    echo "System ninja is too old"
+    exit 1
+fi

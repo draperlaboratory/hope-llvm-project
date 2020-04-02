@@ -144,7 +144,8 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
     StackSize = FirstSPAdjustAmount;
 
   // Allocate space on the stack if necessary.
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize, MachineInstr::FrameSetup);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize,
+            (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 
   // Emit ".cfi_def_cfa_offset StackSize"
   unsigned CFIIndex = MF.addFrameInst(
@@ -179,7 +180,8 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
           MF.getFunction(), "Frame pointer required, but has been reserved."});
 
     adjustReg(MBB, MBBI, DL, FPReg, SPReg,
-              StackSize - RVFI->getVarArgsSaveSize(), MachineInstr::FrameSetup);
+              StackSize - RVFI->getVarArgsSaveSize(),
+              (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 
     // Emit ".cfi_def_cfa $fp, 0"
     unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::createDefCfa(
@@ -280,7 +282,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
   if (RI->needsStackRealignment(MF) || MFI.hasVarSizedObjects()) {
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, FPReg, -FPOffset,
-              MachineInstr::FrameDestroy);
+              (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
   }
 
   uint64_t FirstSPAdjustAmount = getFirstSPAdjustAmount(MF);
@@ -290,14 +292,15 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
            "SecondSPAdjustAmount should be greater than zero");
 
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, SPReg, SecondSPAdjustAmount,
-              MachineInstr::FrameDestroy);
+              (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
   }
 
   if (FirstSPAdjustAmount)
     StackSize = FirstSPAdjustAmount;
 
   // Deallocate stack
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize, MachineInstr::FrameDestroy);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize,
+            (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
 }
 
 int RISCVFrameLowering::getFrameIndexReference(const MachineFunction &MF,

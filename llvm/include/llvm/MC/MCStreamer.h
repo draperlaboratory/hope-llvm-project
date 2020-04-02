@@ -13,6 +13,7 @@
 #ifndef LLVM_MC_MCSTREAMER_H
 #define LLVM_MC_MCSTREAMER_H
 
+#include "llvm/MC/SSITHMetadata.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
@@ -102,6 +103,11 @@ public:
   virtual void emitLabel(MCSymbol *Symbol);
   // Allow a target to add behavior to the emitAssignment of MCStreamer.
   virtual void emitAssignment(MCSymbol *Symbol, const MCExpr *Value);
+  // Allow a target to add behavior to the EmitInstruction of MCStreamer
+  virtual void emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI);
+  // Allow a target to add behavior or the EmitCommonSymbol of MCStreamer
+  virtual void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+				unsigned ByteAlignment);
 
   virtual void prettyPrintAsm(MCInstPrinter &InstPrinter, uint64_t Address,
                               const MCInst &Inst, const MCSubtargetInfo &STI,
@@ -612,6 +618,10 @@ public:
   virtual void EmitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
                             uint64_t Size = 0, unsigned ByteAlignment = 0,
                             SMLoc Loc = SMLoc()) = 0;
+
+  /// SSITH metadata write - only defined by MCELFStreamer
+  virtual void EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
+                                      uint8_t MD_type, uint8_t tag) {}
 
   /// Emit a thread local bss (.tbss) symbol.
   ///
