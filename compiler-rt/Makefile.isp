@@ -28,7 +28,7 @@ RV32_FLAGS += -DCMAKE_CXX_FLAGS=$(RV32_TARGET_FLAGS)
 RV32_FLAGS += -DCMAKE_ASM_FLAGS=$(RV32_TARGET_FLAGS)
 RV32_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_ARCH=riscv32
 RV32_FLAGS += -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=riscv32-unknown-elf
-RV32_FLAGS += -DCMAKE_SYSROOT=$(ISP_PREFIX)/clang_sysroot/riscv32-unknown-elf
+RV32_FLAGS += -DCMAKE_SYSROOT=$(ISP_PREFIX)/clang_sysroot/riscv64-unknown-elf
 
 RV64_TARGET_FLAGS += --target=riscv64-unknown-elf -march=rv64imafd -mabi=lp64d
 RV64_TARGET_FLAGS += -mno-relax -mcmodel=medany
