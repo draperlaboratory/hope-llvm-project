@@ -35,6 +35,7 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
 RISCVToolChain::RISCVToolChain(const Driver &D, const llvm::Triple &Triple,
                                const ArgList &Args)
     : Generic_ELF(D, Triple, Args) {
+    /*
   GCCInstallation.init(Triple, Args);
   if (GCCInstallation.isValid()) {
     Multilibs = GCCInstallation.getMultilibs();
@@ -54,6 +55,7 @@ RISCVToolChain::RISCVToolChain(const Driver &D, const llvm::Triple &Triple,
   } else {
     getProgramPaths().push_back(D.Dir);
   }
+*/
 
   // If march and mabi are defined and the OS is uknown (baremetal)
   // Add the sysroot/lib/march/mabi directory to the file paths
