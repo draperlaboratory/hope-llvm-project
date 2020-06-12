@@ -645,10 +645,10 @@ else ()
       # double routines.
       if("${arch}" STREQUAL "riscv32")
         list(APPEND BUILTIN_CFLAGS -fforce-enable-int128)
-        list(APPEND BUILTIN_CFLAGS -march=rv32ima -mabi=ilp32)
+        list(APPEND BUILTIN_CFLAGS -march=rv32ima -mabi=ilp32 -g)
       endif()
       if("${arch}" STREQUAL "riscv64")
-        list(APPEND BUILTIN_CFLAGS -march=rv64imafd -mabi=lp64d)
+        list(APPEND BUILTIN_CFLAGS -march=rv64imafd -mabi=lp64d -g)
       endif()
       list(APPEND BUILTIN_CFLAGS -mno-relax)
 
