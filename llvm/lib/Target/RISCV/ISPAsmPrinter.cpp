@@ -56,9 +56,27 @@ void ISPAsmPrinter::EmitFnRangeMetadata(MCSymbol *begin, MCSymbol *end){
   ((ISPTargetELFStreamer*)(OutStreamer->getTargetStreamer()))->EmitSSITHMetadataEntry(Fixups, DMD_FUNCTION_RANGE, 0);
 }
 
-static void LowerToSSITHEpilogStore(const MachineInstr *MI, MCInst &OutMI,
+static void LowerToSSITHEpilogStore32(const MachineInstr *MI, MCInst &OutMI,
                                           const AsmPrinter &AP) {
   OutMI.setOpcode(RISCV::SW);
+
+  bool first = true;
+  for (const MachineOperand &MO : MI->operands()) {
+    MCOperand MCOp;
+    if(first){
+      OutMI.addOperand(MCOperand::createReg(RISCV::X0));
+      first = false;
+    }
+    else if (LowerRISCVMachineOperandToMCOperand(MO, MCOp, AP))
+      OutMI.addOperand(MCOp);
+  }
+
+  OutMI.setFlags(MI->getFlags());
+}
+
+static void LowerToSSITHEpilogStore64(const MachineInstr *MI, MCInst &OutMI,
+                                          const AsmPrinter &AP) {
+  OutMI.setOpcode(RISCV::SD);
 
   bool first = true;
   for (const MachineOperand &MO : MI->operands()) {
@@ -87,7 +105,12 @@ void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
     //Emit our new store
     MCInst SSITHStore;
-    LowerToSSITHEpilogStore(MI, SSITHStore, *this);
+    LowerToSSITHEpilogStore32(MI, SSITHStore, *this);
+    EmitToStreamer(*OutStreamer, SSITHStore);
+  } else if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LD){
+    //Same as above, but for 64-bit load instructions
+    MCInst SSITHStore;
+    LowerToSSITHEpilogStore64(MI, SSITHStore, *this);
     EmitToStreamer(*OutStreamer, SSITHStore);
   }
 
