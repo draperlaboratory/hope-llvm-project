@@ -2,11 +2,25 @@
 
 version=`ninja --version`;
 check="1.8.2";
-winner=`echo -e "${version}\n${check}" | sort -nr | head -1`;
-if [[ "${winner}" = "${version}" ]]; then
+dpkg --compare-versions $version "ge" $check
+result=$?
+
+if [[ $result == 0 ]]; then
     echo "System ninja is new enough"
     exit 0
 else
     echo "System ninja is too old"
     exit 1
 fi
+
+# the below does not work if the ninja version is newer than 1.8.2
+# winner=`echo -e "${version}\n${check}" | sort -nr | head -1`;
+# echo -e "${version}\n${check}" | sort -nr
+# if [[ "${winner}" = "${version}" ]]; then
+#     echo "System ninja is new enough"
+#     exit 0
+# else
+#     echo "System ninja is too old"
+#     exit 1
+# fi
+# 

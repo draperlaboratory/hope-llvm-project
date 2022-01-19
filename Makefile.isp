@@ -12,6 +12,8 @@ else
 	NINJA := $(HOME)/.local/bin/ninja
 endif
 
+$(info Found ninja at $(NINJA))
+
 BUILD_TYPE ?= debug
 
 COMMON_CMAKE_FLAGS += -G "Ninja"
