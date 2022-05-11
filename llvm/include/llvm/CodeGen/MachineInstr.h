@@ -119,7 +119,9 @@ public:
     IsCall       = 1 << 22,
     IsReturn     = 1 << 23,
     IsBranch     = 1 << 24,
-    MaxFlagShift = 24
+    IsBeforeInlineAsm  = 1 << 25,
+    IsAfterInlineAsm  = 1 << 26,
+    MaxFlagShift = 25
   };
 
 private:

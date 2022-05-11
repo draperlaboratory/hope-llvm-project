@@ -54,10 +54,12 @@ static void setMIFlags(MachineInstr *MI) {
   
 bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
+    MachineInstrBundleIterator<llvm::MachineInstr> prev_instr = NULL;
     for (auto &MBB : MF) {
 
         // check first instruction
         auto MI = MBB.getFirstNonDebugInstr();
+        prev_instr = MBB.getFirstNonDebugInstr();
         if ( MI == MBB.end() )
             continue;
 
@@ -81,6 +83,15 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
         // check all other instructions
 
+        if(MI->isInlineAsm()) {
+            // Sometimes there is no before, if the inline asm is first in a function.
+            MI->print(dbgs());
+            printf("Mark A Before\n");
+            if(!prev_instr->isInlineAsm()) {
+                prev_instr->setFlag(MachineInstr::IsBeforeInlineAsm);
+            }
+        }
+
         auto last = MI;
         for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
 
@@ -98,6 +109,19 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
                     break;  //breaks the switch not the loop
             }
 
+            // AM: This *does* find inline asm
+            if(MI->isInlineAsm()) {
+                // Sometimes there is no before, if the inline asm is first in a function.
+            printf("Mark B Before\n");
+            MI->print(dbgs());
+            if(!last->isInlineAsm())
+                last->setFlag(MachineInstr::IsBeforeInlineAsm);
+            }
+            if(last->isInlineAsm()) {
+                // Does this work if the inline asm is last in afunction? (TBD)
+            printf("Mark C After\n");
+                MI->setFlag(MachineInstr::IsAfterInlineAsm);
+            }
             if(last->isCall())
                 MI->setFlag(MachineInstr::ReturnTarget);
 

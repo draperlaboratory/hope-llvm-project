@@ -1560,6 +1560,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "is-return ";
   if (getFlag(MachineInstr::IsBranch))
     OS << "is-branch ";
+  if (getFlag(MachineInstr::IsBeforeInlineAsm))
+    OS << "is-before-inline-asm ";
+  if (getFlag(MachineInstr::IsAfterInlineAsm))
+    OS << "is-after-inline-asm ";
 
   // Print the opcode name.
   if (TII)

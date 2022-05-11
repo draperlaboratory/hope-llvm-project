@@ -152,6 +152,8 @@ on any given address.
 #define DMT_BRANCH_INSTR 9u
 #define DMT_FPTR_CREATE_AUTHORITY 10u
 #define DMT_WRITE_ONCE 11u
+#define DMT_BEFORE_INLINE_ASM_INSNS 12u
+#define DMT_AFTER_INLINE_ASM_INSNS 13u
 
 //#define WriteOnceFlagVal ((0x1) << (MachineInstr::MaxFlagShift + 1))
 
@@ -171,7 +173,9 @@ const std::map<int, int> MachineInstFlagToMetadata = {
   {MachineInstr::IsBranch, DMT_BRANCH_INSTR},
   {MachineInstr::CallTarget, DMT_CFI3L_VALID_TGT},
   {MachineInstr::ReturnTarget, DMT_RET_VALID_TGT},
-  {MachineInstr::BranchTarget, DMT_BRANCH_VALID_TGT}
+  {MachineInstr::BranchTarget, DMT_BRANCH_VALID_TGT},
+  {MachineInstr::IsBeforeInlineAsm, DMT_BEFORE_INLINE_ASM_INSNS},
+  {MachineInstr::IsAfterInlineAsm, DMT_AFTER_INLINE_ASM_INSNS}
 };
 
 #endif
