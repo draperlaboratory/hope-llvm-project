@@ -84,9 +84,6 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
         // check all other instructions
 
         if(MI->isInlineAsm()) {
-            // Sometimes there is no before, if the inline asm is first in a function.
-            MI->print(dbgs());
-            printf("Mark A Before\n");
             if(!prev_instr->isInlineAsm()) {
                 prev_instr->setFlag(MachineInstr::IsBeforeInlineAsm);
             }
@@ -109,17 +106,11 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
                     break;  //breaks the switch not the loop
             }
 
-            // AM: This *does* find inline asm
             if(MI->isInlineAsm()) {
-                // Sometimes there is no before, if the inline asm is first in a function.
-            printf("Mark B Before\n");
-            MI->print(dbgs());
-            if(!last->isInlineAsm())
-                last->setFlag(MachineInstr::IsBeforeInlineAsm);
+                if(!last->isInlineAsm())
+                    last->setFlag(MachineInstr::IsBeforeInlineAsm);
             }
             if(last->isInlineAsm()) {
-                // Does this work if the inline asm is last in afunction? (TBD)
-            printf("Mark C After\n");
                 MI->setFlag(MachineInstr::IsAfterInlineAsm);
             }
             if(last->isCall())

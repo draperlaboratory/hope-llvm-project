@@ -95,13 +95,7 @@ static void LowerToSSITHEpilogStore64(const MachineInstr *MI, MCInst &OutMI,
 void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   
   RISCVAsmPrinter::EmitInstruction(MI);
-//   MI->print(dbgs());
 
-  //   AM: This does not seem to find Inline Asm
-  //   It is already MCInst by here
-//   if(MI->isInlineAsm()) 
-//     EmitFnRangeMetadata(CurrentFnSym, OutContext.createTempSymbol());
-//       MI->print(dbgs());
   // fn range avoids NoCFI on C code stuff
   // TODO: this may or may not be in the "right" place...
   if(MI->isReturn()) 
@@ -119,11 +113,6 @@ void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     LowerToSSITHEpilogStore64(MI, SSITHStore, *this);
     EmitToStreamer(*OutStreamer, SSITHStore);
   }
-//   else if (MI->isInlineAsm()){
-//     MCInst SSITHStore;
-//     SSITHStore.setFlags(MI->getFlags());
-//     EmitToStreamer(*OutStreamer, SSITHStore);
-//   }
 
 }
 
