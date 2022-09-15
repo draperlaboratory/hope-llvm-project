@@ -45,10 +45,14 @@ static void setMIFlags(MachineInstr *MI) {
     MI->setFlag(MachineInstr::IsReturn);
     MI->setFlag(MachineInstr::FnEpilog);
   }
+
+  // These two used to use MI->setFlag() instead, which broke the tailcall tagging.
+  // I tried to see whether machine instructions ever have flags that may cause issues,
+  // but I couldn't find any cases of that.
   else if ( MI->isCall() )
-    MI->setFlags(MachineInstr::IsCall);
+    MI->setFlag(MachineInstr::IsCall);
   else if ( MI->isBranch() )
-    MI->setFlags(MachineInstr::IsBranch);
+    MI->setFlag(MachineInstr::IsBranch);
   
 }
   

@@ -134,12 +134,17 @@ bool RISCVExpandPseudo::expandPseudoBranch(MachineBasicBlock &MBB,
    .add(*Func);
 
   if (MI.getOpcode() == RISCV::PseudoTAIL ||
-      MI.getOpcode() == RISCV::PseudoJump)
+      MI.getOpcode() == RISCV::PseudoJump) {
     // Emit JALR X0, Ra, 0
-    BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::JALR), RISCV::X0)
+    auto &JMI = BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::JALR), RISCV::X0)
       .addReg(Ra)
       .addImm(0);
-  else
+
+    // Mark tailcall instructions so that function range metadata is still correct.
+    if (MI.getOpcode() == RISCV::PseudoTAIL) {
+       JMI.setMIFlag(MachineInstr::IsTailCall);
+    }
+  } else
     // Emit JALR Ra, Ra, 0
     BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::JALR), Ra)
       .addReg(Ra)
