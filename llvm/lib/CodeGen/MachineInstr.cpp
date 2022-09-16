@@ -1560,6 +1560,8 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "is-return ";
   if (getFlag(MachineInstr::IsBranch))
     OS << "is-branch ";
+  if (getFlag(MachineInstr::IsTailCall))
+    OS << "is-tail-call ";
 
   // Print the opcode name.
   if (TII)

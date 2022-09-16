@@ -93,14 +93,13 @@ static void LowerToSSITHEpilogStore64(const MachineInstr *MI, MCInst &OutMI,
 }
 
 void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-  
   RISCVAsmPrinter::EmitInstruction(MI);
 
   // fn range avoids NoCFI on C code stuff
   // TODO: this may or may not be in the "right" place...
-  if(MI->isReturn()) 
+  if(MI->isReturn() || MI->getFlag(MachineInstr::IsTailCall)) {
     EmitFnRangeMetadata(CurrentFnSym, OutContext.createTempSymbol());
-
+  }
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
     //Emit our new store

@@ -119,7 +119,8 @@ public:
     IsCall       = 1 << 22,
     IsReturn     = 1 << 23,
     IsBranch     = 1 << 24,
-    MaxFlagShift = 24
+    IsTailCall   = 1 << 25,             // A branch instruction that also acts as a tail call.
+    MaxFlagShift = 25
   };
 
 private:
