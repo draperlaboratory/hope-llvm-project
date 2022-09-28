@@ -283,6 +283,11 @@ void MCObjectStreamer::emitCFIEndProcImpl(MCDwarfFrameInfo &Frame) {
   emitLabel(Frame.End);
 }
 
+void MCObjectStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+					unsigned ByteAlignment) {
+  MCStreamer::emitCommonSymbol(Symbol, Size, ByteAlignment);
+}
+
 void MCObjectStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   MCStreamer::emitLabel(Symbol, Loc);
 

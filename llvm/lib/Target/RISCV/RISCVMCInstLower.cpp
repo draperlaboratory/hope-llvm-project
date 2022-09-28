@@ -250,5 +250,6 @@ bool llvm::lowerRISCVMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
     OutMI.addOperand(MCOperand::createReg(RISCV::X0));
     break;
   }
+  OutMI.setFlags(MI->getFlags());
   return false;
 }

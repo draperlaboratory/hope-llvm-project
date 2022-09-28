@@ -167,6 +167,9 @@ protected:
   /// Remarks section.
   MCSection *RemarksSection = nullptr;
 
+  // ISP Metadata Section
+  MCSection *ISPMetadataSection;
+
   /// EH frame section.
   ///
   /// It is initialized on demand so it can be overwritten (with uniquing).
@@ -433,6 +436,8 @@ public:
   MCSection *getTOCBaseSection() const { return TOCBaseSection; }
 
   MCSection *getEHFrameSection() const { return EHFrameSection; }
+
+  MCSection *getISPMetadataSection() const { return ISPMetadataSection; }
 
   bool isPositionIndependent() const { return PositionIndependent; }
 

@@ -455,7 +455,8 @@ void RISCVInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                          MachineBasicBlock::iterator I,
                                          Register SrcReg, bool IsKill, int FI,
                                          const TargetRegisterClass *RC,
-                                         const TargetRegisterInfo *TRI) const {
+                                         const TargetRegisterInfo *TRI,
+                                         unsigned flags) const {
   DebugLoc DL;
   if (I != MBB.end())
     DL = I->getDebugLoc();
@@ -525,7 +526,8 @@ void RISCVInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     auto MIB = BuildMI(MBB, I, DL, get(Opcode))
                    .addReg(SrcReg, getKillRegState(IsKill))
                    .addFrameIndex(FI)
-                   .addMemOperand(MMO);
+                   .addMemOperand(MMO)
+                   .setMIFlags(flags);
     if (IsZvlsseg) {
       // For spilling/reloading Zvlsseg registers, append the dummy field for
       // the scaled vector length. The argument will be used when expanding
@@ -541,7 +543,8 @@ void RISCVInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
         .addReg(SrcReg, getKillRegState(IsKill))
         .addFrameIndex(FI)
         .addImm(0)
-        .addMemOperand(MMO);
+        .addMemOperand(MMO)
+        .setMIFlags(flags);
   }
 }
 
@@ -549,7 +552,8 @@ void RISCVInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator I,
                                           Register DstReg, int FI,
                                           const TargetRegisterClass *RC,
-                                          const TargetRegisterInfo *TRI) const {
+                                          const TargetRegisterInfo *TRI,
+                                          unsigned flags) const {
   DebugLoc DL;
   if (I != MBB.end())
     DL = I->getDebugLoc();
@@ -618,7 +622,8 @@ void RISCVInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     MFI.setStackID(FI, TargetStackID::ScalableVector);
     auto MIB = BuildMI(MBB, I, DL, get(Opcode), DstReg)
                    .addFrameIndex(FI)
-                   .addMemOperand(MMO);
+                   .addMemOperand(MMO)
+                   .setMIFlags(flags);
     if (IsZvlsseg) {
       // For spilling/reloading Zvlsseg registers, append the dummy field for
       // the scaled vector length. The argument will be used when expanding
@@ -633,7 +638,8 @@ void RISCVInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     BuildMI(MBB, I, DL, get(Opcode), DstReg)
         .addFrameIndex(FI)
         .addImm(0)
-        .addMemOperand(MMO);
+        .addMemOperand(MMO)
+        .setMIFlags(flags);
   }
 }
 

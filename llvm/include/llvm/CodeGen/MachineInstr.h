@@ -37,9 +37,12 @@
 
 namespace llvm {
 
+using MachineInstrFlags_t = uint32_t;
+
 class DILabel;
 class Instruction;
 class MDNode;
+
 class AAResults;
 template <typename T> class ArrayRef;
 class DIExpression;
@@ -112,6 +115,20 @@ public:
     NoMerge      = 1 << 15,             // Passes that drop source location info
                                         // (e.g. branch folding) should skip
                                         // this instruction.
+    FnProlog     = 1 << 16,             // Instruction is part of the compiler generated
+                                        // prolog
+    FnEpilog     = 1 << 17,             // Instruction is part of the compiler generated
+                                        // epilog
+    FPtrStore    = 1 << 18,             // Instruction writes a function pointer to memory
+    FPtrCreate   = 1 << 19,             // Instruction creates a function pointer
+    CallTarget   = 1 << 20,             // first instruction of a function
+    ReturnTarget = 1 << 21,             // first instruction after a call
+    BranchTarget = 1 << 22,             // a branch lands here.
+    IsCall       = 1 << 23,
+    IsReturn     = 1 << 24,
+    IsBranch     = 1 << 25,
+    IsTailCall   = 1 << 26,             // A branch instruction that also acts as a tail call.
+    MaxFlagShift = 26
   };
 
 private:
@@ -122,7 +139,7 @@ private:
   MachineOperand *Operands = nullptr;   // Pointer to the first operand.
   unsigned NumOperands = 0;             // Number of operands on instruction.
 
-  uint16_t Flags = 0;                   // Various bits of additional
+  MachineInstrFlags_t Flags = 0;        // Various bits of additional
                                         // information about machine
                                         // instruction.
 
@@ -324,7 +341,7 @@ public:
   }
 
   /// Return the MI flags bitvector.
-  uint16_t getFlags() const {
+  MachineInstrFlags_t getFlags() const {
     return Flags;
   }
 
@@ -335,18 +352,18 @@ public:
 
   /// Set a MI flag.
   void setFlag(MIFlag Flag) {
-    Flags |= (uint16_t)Flag;
+    Flags |= (MachineInstrFlags_t)Flag;
   }
 
-  void setFlags(unsigned flags) {
+  void setFlags(MachineInstrFlags_t flags) {
     // Filter out the automatically maintained flags.
-    unsigned Mask = BundledPred | BundledSucc;
+    MachineInstrFlags_t  Mask = BundledPred | BundledSucc;
     Flags = (Flags & Mask) | (flags & ~Mask);
   }
 
   /// clearFlag - Clear a MI flag.
   void clearFlag(MIFlag Flag) {
-    Flags &= ~((uint16_t)Flag);
+    Flags &= ~((MachineInstrFlags_t)Flag);
   }
 
   /// Return true if MI is in a bundle (but not the first MI in a bundle).
@@ -1789,9 +1806,9 @@ public:
   /// Return the MIFlags which represent both MachineInstrs. This
   /// should be used when merging two MachineInstrs into one. This routine does
   /// not modify the MIFlags of this MachineInstr.
-  uint16_t mergeFlagsWith(const MachineInstr& Other) const;
+  MachineInstrFlags_t mergeFlagsWith(const MachineInstr& Other) const;
 
-  static uint16_t copyFlagsFromInstruction(const Instruction &I);
+  static MachineInstrFlags_t copyFlagsFromInstruction(const Instruction &I);
 
   /// Copy all flags to MachineInst MIFlags
   void copyIRFlags(const Instruction &I);

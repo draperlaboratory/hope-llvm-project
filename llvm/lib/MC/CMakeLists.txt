@@ -77,6 +77,9 @@ add_llvm_component_library(LLVMMC
   Support
   BinaryFormat
   DebugInfoCodeView
+
+  DEPENDS
+  attributes_gen
   )
 
 add_subdirectory(MCParser)

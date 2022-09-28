@@ -37,6 +37,9 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
 // or Baremetal toolchain.
 bool RISCVToolChain::hasGCCToolchain(const Driver &D,
                                      const llvm::opt::ArgList &Args) {
+  // ISP: force return true so that we use RISCVToolChain
+  return true;
+
   if (Args.getLastArg(options::OPT_gcc_toolchain))
     return true;
 
@@ -50,6 +53,7 @@ bool RISCVToolChain::hasGCCToolchain(const Driver &D,
 RISCVToolChain::RISCVToolChain(const Driver &D, const llvm::Triple &Triple,
                                const ArgList &Args)
     : Generic_ELF(D, Triple, Args) {
+    /*
   GCCInstallation.init(Triple, Args);
   if (GCCInstallation.isValid()) {
     Multilibs = GCCInstallation.getMultilibs();
@@ -69,7 +73,22 @@ RISCVToolChain::RISCVToolChain(const Driver &D, const llvm::Triple &Triple,
   } else {
     getProgramPaths().push_back(D.Dir);
   }
-  getFilePaths().push_back(computeSysRoot() + "/lib");
+*/
+
+  // If march and mabi are defined and the OS is uknown (baremetal)
+  // Add the sysroot/lib/march/mabi directory to the file paths
+  if (Args.hasArg(options::OPT_mabi_EQ) && Args.hasArg(options::OPT_march_EQ)) {
+      StringRef MABI = Args.getLastArg(options::OPT_mabi_EQ)->getValue();
+      StringRef MARCH = Args.getLastArg(options::OPT_march_EQ)->getValue();
+      // Has march and mabi args, let's look for multilibs
+      if (Triple.getOS() == llvm::Triple::UnknownOS) {
+          // baremetal
+          getFilePaths().push_back(computeSysRoot() + "/lib/" + MARCH.str() + "/" + MABI.str());
+      }
+  } else {
+      getFilePaths().push_back(computeSysRoot() + "/lib");
+  }
+
 }
 
 Tool *RISCVToolChain::buildLinker() const {

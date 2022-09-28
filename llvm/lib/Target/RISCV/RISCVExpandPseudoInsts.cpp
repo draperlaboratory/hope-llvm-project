@@ -64,6 +64,9 @@ private:
                          MachineBasicBlock::iterator MBBI, unsigned Opcode);
   bool expandVSPILL(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI);
   bool expandVRELOAD(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI);
+  bool expandPseudoBranch(MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator MBBI,
+                          MachineBasicBlock::iterator &NextMBBI);
 };
 
 char RISCVExpandPseudo::ID = 0;
@@ -87,6 +90,61 @@ bool RISCVExpandPseudo::expandMBB(MachineBasicBlock &MBB) {
   }
 
   return Modified;
+}
+
+// NOTE: I don't know why this was done directly at the emission phase,
+//       and I hope there's no reason that this will break something.
+//
+//       We need this to be done here because otherwise the ISPMetadataPass
+//       will always tag the AUIPC instruction, which is wrong in some cases.
+//       (i.e. control flow or block end metadata)
+bool RISCVExpandPseudo::expandPseudoBranch(MachineBasicBlock &MBB,
+                                           MachineBasicBlock::iterator MBBI,
+                                           MachineBasicBlock::iterator &NextMBBI) {
+  auto &MI = *MBBI;
+
+  const MachineOperand *Func;
+  Register Ra;
+  if (MI.getOpcode() == RISCV::PseudoTAIL) {
+    Func = &MI.getOperand(0);
+    Ra = RISCV::X6;
+  } else if (MI.getOpcode() == RISCV::PseudoCALLReg) {
+    Func = &MI.getOperand(1);
+    Ra = MI.getOperand(0).getReg();
+  } else if (MI.getOpcode() == RISCV::PseudoCALL) {
+    Func = &MI.getOperand(0);
+    Ra = RISCV::X1;
+  } else if (MI.getOpcode() == RISCV::PseudoJump) {
+    Func = &MI.getOperand(1);
+    Ra = MI.getOperand(0).getReg();
+  } else {
+    llvm_unreachable("Wrong instruction type!");
+  }
+
+  auto DL = MI.getDebugLoc();
+
+  BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::AUIPC), Ra)
+   .add(*Func);
+
+  if (MI.getOpcode() == RISCV::PseudoTAIL ||
+      MI.getOpcode() == RISCV::PseudoJump) {
+    // Emit JALR X0, Ra, 0
+    auto &JMI = BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::JALR), RISCV::X0)
+      .addReg(Ra)
+      .addImm(0);
+
+    // Mark tailcall instructions so that function range metadata is still correct.
+    if (MI.getOpcode() == RISCV::PseudoTAIL) {
+       JMI.setMIFlag(MachineInstr::IsTailCall);
+    }
+  } else
+    // Emit JALR Ra, Ra, 0
+    BuildMI(MBB, NextMBBI, DL, TII->get(RISCV::JALR), Ra)
+      .addReg(Ra)
+      .addImm(0);
+
+  MI.eraseFromParent();
+  return true;
 }
 
 bool RISCVExpandPseudo::expandMI(MachineBasicBlock &MBB,
@@ -150,6 +208,11 @@ bool RISCVExpandPseudo::expandMI(MachineBasicBlock &MBB,
   case RISCV::PseudoVRELOAD7_M1:
   case RISCV::PseudoVRELOAD8_M1:
     return expandVRELOAD(MBB, MBBI);
+  case RISCV::PseudoTAIL:
+  case RISCV::PseudoCALL:
+  case RISCV::PseudoCALLReg:
+  case RISCV::PseudoJump:
+    return expandPseudoBranch(MBB, MBBI, NextMBBI);
   }
 
   return false;

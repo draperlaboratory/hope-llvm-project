@@ -32,6 +32,8 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/ErrorHandling.h"
 
+#include "ISP.h"
+
 #define GET_INSTRINFO_MC_DESC
 #define ENABLE_INSTR_PREDICATE_VERIFIER
 #include "RISCVGenInstrInfo.inc"
@@ -96,7 +98,7 @@ static MCTargetStreamer *
 createRISCVObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
   const Triple &TT = STI.getTargetTriple();
   if (TT.isOSBinFormatELF())
-    return new RISCVTargetELFStreamer(S, STI);
+    return new ISPTargetELFStreamer(S, STI);
   return nullptr;
 }
 

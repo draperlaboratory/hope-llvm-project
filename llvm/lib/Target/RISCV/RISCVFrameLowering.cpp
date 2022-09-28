@@ -470,7 +470,8 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
   }
 
   // Allocate space on the stack if necessary.
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize, MachineInstr::FrameSetup);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, -StackSize,
+            (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 
   // Emit ".cfi_def_cfa_offset RealStackSize"
   unsigned CFIIndex = MF.addFrameInst(
@@ -517,7 +518,7 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
 
     adjustReg(MBB, MBBI, DL, FPReg, SPReg,
               RealStackSize - RVFI->getVarArgsSaveSize(),
-              MachineInstr::FrameSetup);
+              (MachineInstr::MIFlag)(MachineInstr::FrameSetup | MachineInstr::FnProlog));
 
     // Emit ".cfi_def_cfa $fp, RVFI->getVarArgsSaveSize()"
     unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfa(
@@ -650,7 +651,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
       !hasReservedCallFrame(MF)) {
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, FPReg, -FPOffset,
-              MachineInstr::FrameDestroy);
+      (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
   } else {
     if (RVVStackSize)
       adjustStackForRVV(MF, MBB, LastFrameDestroy, DL, RVVStackSize,
@@ -665,14 +666,15 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
            "SecondSPAdjustAmount should be greater than zero");
 
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, SPReg, SecondSPAdjustAmount,
-              MachineInstr::FrameDestroy);
+              (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
   }
 
   if (FirstSPAdjustAmount)
     StackSize = FirstSPAdjustAmount;
 
   // Deallocate stack
-  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize, MachineInstr::FrameDestroy);
+  adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize,
+    (MachineInstr::MIFlag)(MachineInstr::FrameDestroy | MachineInstr::FnEpilog));
 
   // Emit epilogue for shadow call stack.
   emitSCSEpilogue(MF, MBB, MBBI, DL);

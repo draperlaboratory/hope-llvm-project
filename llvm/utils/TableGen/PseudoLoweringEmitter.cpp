@@ -238,9 +238,11 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
       CodeGenInstruction &Dest = Expansion.Dest;
       o << "  case " << Source.Namespace << "::"
         << Source.TheDef->getName() << ": {\n"
-        << "    MCInst TmpInst;\n"
-        << "    MCOperand MCOp;\n"
-        << "    TmpInst.setOpcode(" << Dest.Namespace << "::"
+        << "      MCInst TmpInst;\n"
+        << "      MCOperand MCOp;\n"
+	<< "      TmpInst.setFlags(MI->getFlags());\n"
+	<< "\n"
+	<< "      TmpInst.setOpcode(" << Dest.Namespace << "::"
         << Dest.TheDef->getName() << ");\n";
 
       // Copy the operands from the source instruction.

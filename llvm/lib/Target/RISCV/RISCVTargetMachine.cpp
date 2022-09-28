@@ -35,6 +35,8 @@
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/IPO.h"
+#include "ISP.h"
+
 using namespace llvm;
 
 static cl::opt<bool> EnableRedundantCopyElimination(
@@ -54,6 +56,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   initializeRISCVSExtWRemovalPass(*PR);
   initializeRISCVExpandPseudoPass(*PR);
   initializeRISCVInsertVSETVLIPass(*PR);
+  initializeRISCVISPMetadataPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT) {
@@ -245,7 +248,9 @@ void RISCVPassConfig::addPreEmitPass2() {
   // Schedule the expansion of AMOs at the last possible moment, avoiding the
   // possibility for other passes to break the requirements for forward
   // progress in the LR/SC block.
+
   addPass(createRISCVExpandAtomicPseudoPass());
+  addPass(createRISCVISPMetadataPass());
 }
 
 void RISCVPassConfig::addMachineSSAOptimization() {

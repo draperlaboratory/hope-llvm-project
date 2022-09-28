@@ -138,11 +138,14 @@ public:
                                  const MCExpr *Value) override;
   void emitValueImpl(const MCExpr *Value, unsigned Size,
                      SMLoc Loc = SMLoc()) override;
+
   void emitULEB128Value(const MCExpr *Value) override;
   void emitSLEB128Value(const MCExpr *Value) override;
   void emitWeakReference(MCSymbol *Alias, const MCSymbol *Symbol) override;
   void changeSection(MCSection *Section, const MCExpr *Subsection) override;
   void emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) override;
+  void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+			unsigned ByteAlignment) override;
 
   /// Emit an instruction to a special fragment, because this instruction
   /// can change its size during relaxation.
