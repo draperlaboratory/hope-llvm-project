@@ -117,7 +117,6 @@ void ISPTargetELFStreamer::EmitMCSymbolMetadata(MCSymbol *Sym) {
 
   for ( auto const &pair : MachineInstFlagToMetadata )
     if ( Sym->getFlag(pair.first) ) {
-      if (pair.first & MachineInstr::CallTarget) errs() << "Yeah\n";
       EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, pair.second);
     }
 }
