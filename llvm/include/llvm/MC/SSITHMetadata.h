@@ -152,6 +152,8 @@ on any given address.
 #define DMT_BRANCH_INSTR 9u
 #define DMT_FPTR_CREATE_AUTHORITY 10u
 #define DMT_WRITE_ONCE 11u
+#define DMT_BLOCK_START 12u
+#define DMT_BLOCK_END 13u
 
 //#define WriteOnceFlagVal ((0x1) << (MachineInstr::MaxFlagShift + 1))
 
@@ -161,17 +163,19 @@ on any given address.
 using namespace std;
 using namespace llvm;
 
-const std::map<int, int> MachineInstFlagToMetadata = {
-  {MachineInstr::FnProlog, DMT_STACK_PROLOGUE_AUTHORITY}, 
-  {MachineInstr::FnEpilog, DMT_STACK_EPILOGUE_AUTHORITY}, 
-  {MachineInstr::FPtrStore, DMT_FPTR_STORE_AUTHORITY}, 
-  {MachineInstr::FPtrCreate, DMT_FPTR_CREATE_AUTHORITY}, 
-  {MachineInstr::IsReturn, DMT_RETURN_INSTR}, 
-  {MachineInstr::IsCall, DMT_CALL_INSTR}, 
+const std::map<MachineInstrFlags_t, int> MachineInstFlagToMetadata = {
+  {MachineInstr::FnProlog, DMT_STACK_PROLOGUE_AUTHORITY},
+  {MachineInstr::FnEpilog, DMT_STACK_EPILOGUE_AUTHORITY},
+  {MachineInstr::FPtrStore, DMT_FPTR_STORE_AUTHORITY},
+  {MachineInstr::FPtrCreate, DMT_FPTR_CREATE_AUTHORITY},
+  {MachineInstr::IsReturn, DMT_RETURN_INSTR},
+  {MachineInstr::IsCall, DMT_CALL_INSTR},
   {MachineInstr::IsBranch, DMT_BRANCH_INSTR},
   {MachineInstr::CallTarget, DMT_CFI3L_VALID_TGT},
   {MachineInstr::ReturnTarget, DMT_RET_VALID_TGT},
-  {MachineInstr::BranchTarget, DMT_BRANCH_VALID_TGT}
+  {MachineInstr::BranchTarget, DMT_BRANCH_VALID_TGT},
+  {MachineInstr::IsBlockStart, DMT_BLOCK_START},
+  {MachineInstr::IsBlockEnd, DMT_BLOCK_END}
 };
 
 #endif

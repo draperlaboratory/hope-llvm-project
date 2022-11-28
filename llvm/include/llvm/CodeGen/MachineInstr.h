@@ -128,7 +128,10 @@ public:
     IsReturn     = 1 << 24,
     IsBranch     = 1 << 25,
     IsTailCall   = 1 << 26,             // A branch instruction that also acts as a tail call.
-    MaxFlagShift = 26
+    IsBlockStart = 1 << 27,             // The start of a basic block.
+    IsBlockEnd   = 1 << 28,             // The end of a basic block.
+    HasParentFn  = 1 << 29              // Applied to MCInst. Indicates
+                                        // that the instruction has a parent.
   };
 
 private:

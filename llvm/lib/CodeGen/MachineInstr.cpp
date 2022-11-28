@@ -1630,6 +1630,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "is-branch ";
   if (getFlag(MachineInstr::IsTailCall))
     OS << "is-tail-call ";
+  if (getFlag(MachineInstr::IsBlockStart))
+    OS << "block-start ";
+  if (getFlag(MachineInstr::IsBlockEnd))
+    OS << "block-end ";
 
   // Print the opcode name.
   if (TII)

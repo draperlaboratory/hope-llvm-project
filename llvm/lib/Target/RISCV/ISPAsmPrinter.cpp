@@ -42,14 +42,12 @@ void ISPAsmPrinter::EmitFnRangeMetadata(MCSymbol *begin, MCSymbol *end){
   SmallVector<MCFixup, 4> Fixups;
 
   MCContext &Ctx = OutContext;
-  const MCExpr *MEbegin = MCSymbolRefExpr::create(begin, MCSymbolRefExpr::VK_None, Ctx);
-  const MCExpr *MEend = MCSymbolRefExpr::create(end, MCSymbolRefExpr::VK_None, Ctx);
+  const MCExpr *MEbegin = MCSymbolRefExpr::create(begin, Ctx);
+  const MCExpr *MEend = MCSymbolRefExpr::create(end, Ctx);
 
   //Push fixups -- the linker will write the 4 byte address for us
-  Fixups.push_back(
-      MCFixup::create(0, MEbegin, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
-  Fixups.push_back(
-      MCFixup::create(0, MEend, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
+  Fixups.push_back(MCFixup::create(0, MEbegin, MCFixupKind(FK_Data_4)));
+  Fixups.push_back(MCFixup::create(0, MEend, MCFixupKind(FK_Data_4)));
 
   // TODO: Pointer disasters
   OutStreamer->emitLabel(end);
@@ -93,12 +91,23 @@ static void LowerToSSITHEpilogStore64(const MachineInstr *MI, MCInst &OutMI,
 }
 
 void ISPAsmPrinter::emitInstruction(const MachineInstr *MI) {
+  // this is terrible
+  auto *MutableMI = const_cast<MachineInstr *>(MI);
+  MutableMI->setFlag(MachineInstr::HasParentFn);
+
+  // If this is an epilog instruction that we replace
+  // then it won't be the last instruction in the block
+  if (MI->getFlag(MachineInstr::FnEpilog) &&
+     (MI->getOpcode() == RISCV::LW || MI->getOpcode() == RISCV::LD)) {
+   MutableMI->setFlags(MI->getFlags() % ~(MachineInstrFlags_t)MachineInstr::IsBlockEnd);
+  }
+
   RISCVAsmPrinter::emitInstruction(MI);
 
   // fn range avoids NoCFI on C code stuff
   // TODO: this may or may not be in the "right" place...
   if(MI->isReturn() || MI->getFlag(MachineInstr::IsTailCall)) {
-    EmitFnRangeMetadata(CurrentFnSym, OutContext.createTempSymbol());
+    EmitFnRangeMetadata(CurrentFnBegin, OutContext.createNamedTempSymbol("ISP_FUNC_END_"));
   }
   //SSITH - clean up in function epilog
   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){

@@ -27,7 +27,6 @@
 ISPTargetELFStreamer::ISPTargetELFStreamer(MCStreamer &S,
 					   const MCSubtargetInfo &STI)
   : RISCVTargetELFStreamer(S, STI) {
-
   ISPSecInitialized = false;
 }
 
@@ -52,114 +51,111 @@ void ISPTargetELFStreamer::EmitSSITHMetadataHeader(MCObjectStreamer &Streamer){
 
 //SSITH Addition
 void ISPTargetELFStreamer::EmitSSITHMetadataEntry(SmallVector<MCFixup, 4> &Fixups,
-						 uint8_t MD_type, uint8_t tag){
+						 uint8_t MD_type, uint8_t Tag) {
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
   MCDataFragment *DF;
 
   bool switchSection = false;
-  
+
   MCELFStreamer &Streamer = getStreamer();
   MCContext &Context = Streamer.getContext();
-  
+
   const auto ISPMetadataSection =
     Context.getObjectFileInfo()->getISPMetadataSection();
 
-  if ( Streamer.getCurrentSectionOnly() != ISPMetadataSection ) {
+  if (Streamer.getCurrentSectionOnly() != ISPMetadataSection) {
     switchSection = true;
     Streamer.pushSection();
     Streamer.switchSection(ISPMetadataSection);
   }
 
-  if ( !ISPSecInitialized ) 
+  if (!ISPSecInitialized)
     EmitSSITHMetadataHeader(Streamer);
-  
+
   // Emit the Metadata tag
   assert(MD_type && "[SSITH Error] MD_TYPE must be nonnull");
   uint8_t MD = MD_type;
   support::endian::write(VecOS, MD, support::little);
-  
+
   //Our placeholder 0 bytes for the relative address
   uint32_t Bits = 0;
   support::endian::write(VecOS, Bits, support::little);
- 
+
   if(MD_type == DMD_FUNCTION_RANGE)
     support::endian::write(VecOS, Bits, support::little);
-  
+
   //The metadata tag specifier
-  if(MD_type != DMD_FUNCTION_RANGE){
-    assert(tag && 
+  if(MD_type != DMD_FUNCTION_RANGE) {
+    assert(Tag &&
         "[SSITH Error] Must have a non null tag for op types other than function range");
-    MD = tag;
+    MD = Tag;
     support::endian::write(VecOS, MD, support::little);
   }
 
   DF = Streamer.getOrCreateDataFragment();
+
   // Add the fixup and data.
   for(unsigned i = 0; i < Fixups.size(); i++){
     //hack this to account for the prologue byte
-    Fixups[i].setOffset(Fixups[i].getOffset() + DF->getContents().size() + 1 + i*4);
+    Fixups[i].setOffset(DF->getContents().size() + 1 + i * 4);
     DF->getFixups().push_back(Fixups[i]);
   }
+
   DF->getContents().append(Code.begin(), Code.end());
 
-  if ( switchSection )
+  if (switchSection)
     Streamer.popSection();
 }
 
+static SmallVector<MCFixup, 4> GetFixups(MCSymbol *Sym, MCELFStreamer &Streamer) {
+  const MCExpr *ME = MCSymbolRefExpr::create(Sym, Streamer.getContext());
+
+  SmallVector<MCFixup, 4> Fixups;
+  Fixups.push_back(MCFixup::create(0, ME, MCFixupKind(FK_Data_4)));
+
+  return Fixups;
+}
+
 void ISPTargetELFStreamer::EmitMCSymbolMetadata(MCSymbol *Sym) {
-
-  const MCExpr *ME = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getStreamer().getContext());
-
-  SmallVector<MCFixup, 4> Fixups;  
-  Fixups.push_back(
-		   MCFixup::create(0, ME, MCFixupKind(FK_Data_4), SMLoc::getFromPointer(nullptr)));
-
-  for ( auto const &pair : MachineInstFlagToMetadata )
-    if ( Sym->getFlag(pair.first) ) {
-      EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, pair.second);
+  auto Fixups = GetFixups(Sym, getStreamer());
+  for (auto const &Pair : MachineInstFlagToMetadata) {
+    if (Sym->getFlag(Pair.first)) {
+      EmitSSITHMetadataEntry(Fixups, DMD_TAG_ADDRESS_OP, Pair.second);
     }
+  }
 }
 
 void ISPTargetELFStreamer::EmitMCInstMetadata(const MCInst &Inst) {
-
-  // note: need one temp label per metadata entry,
-  //       even if they're on the same instruction  
-  for ( auto const &pair : MachineInstFlagToMetadata ) {
-    if ( Inst.getFlag(pair.first) ) {
-      MCSymbol *InstSym = getStreamer().getContext().createTempSymbol();
-      InstSym->setFlag(pair.first);
-      getStreamer().emitLabel(InstSym);
-    }
+  // Instructions from inline assembly are currently unsupported.
+  if (!Inst.getFlag(MachineInstr::HasParentFn)) {
+    return;
   }
 
+  auto &Streamer = getStreamer();
+
+  auto *InstSym = Streamer.getContext().createNamedTempSymbol("ISP_INST_");
+  for (auto const &Pair : MachineInstFlagToMetadata) {
+    if (Inst.getFlag(Pair.first)) {
+      InstSym->setFlag(Pair.first);
+    }
+  }
+  Streamer.emitLabel(InstSym);
 }
 
 void ISPTargetELFStreamer::emitLabel(MCSymbol *Symbol) {
-
   RISCVTargetELFStreamer::emitLabel(Symbol);
-  
   EmitMCSymbolMetadata(Symbol);
-
-  return;
 }
 
 void ISPTargetELFStreamer::emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) {
-
-  RISCVTargetELFStreamer::emitInstruction(Inst, STI);
-  
   EmitMCInstMetadata(Inst);
-  
-  return;
+  RISCVTargetELFStreamer::emitInstruction(Inst, STI);
 }
 
 void ISPTargetELFStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
 					      unsigned ByteAlignment) {
-
   RISCVTargetELFStreamer::emitCommonSymbol(Symbol, Size, ByteAlignment);
-
   EmitMCSymbolMetadata(Symbol);
-
-  return;
 }
 

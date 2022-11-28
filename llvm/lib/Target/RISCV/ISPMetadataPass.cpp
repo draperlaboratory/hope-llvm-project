@@ -41,26 +41,30 @@ public:
 char RISCVISPMetadata::ID = 1;
 
 static void setMIFlags(MachineInstr *MI) {
-
   if ( MI->isReturn() && !MI->isCall() ) {
     MI->setFlag(MachineInstr::IsReturn);
     MI->setFlag(MachineInstr::FnEpilog);
   }
 
-  // These two used to use MI->setFlag() instead, which broke the tailcall tagging.
+  // These two used to use MI->setFlags() instead, which broke the tailcall tagging.
   // I tried to see whether machine instructions ever have flags that may cause issues,
   // but I couldn't find any cases of that.
   else if ( MI->isCall() )
     MI->setFlag(MachineInstr::IsCall);
   else if ( MI->isBranch() )
     MI->setFlag(MachineInstr::IsBranch);
-  
 }
-  
+
+// Make life easier below
+static MachineInstr::MIFlag operator|(MachineInstr::MIFlag a, MachineInstr::MIFlag b)
+{
+    return (MachineInstr::MIFlag)((MachineInstrFlags_t)a | (MachineInstrFlags_t)b);
+}
+
 bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
     // get function symbol, set Call-Tgt flag
     MF.getContext()
-      .getOrCreateSymbol(MF.getName())->modifyFlags(MachineInstr::CallTarget, 0);
+      .getOrCreateSymbol(MF.getName())->modifyFlags(MachineInstr::CallTarget | MachineInstr::IsBlockStart, 0);
 
     for (auto &MBB : MF) {
         // always label basic blocks
@@ -68,12 +72,17 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
         // check first instruction
         auto MI = MBB.getFirstNonDebugInstr();
+
+        // block is empty, so there isn't anything we should do
         if ( MI == MBB.end() )
             continue;
 
-        if (&MBB != &*MF.begin())
-            MBB.getSymbol()->modifyFlags(MachineInstr::BranchTarget, 0);
+        // Add MBB annotation
+        if (&MBB != &*MF.begin()) {
+            MBB.getSymbol()->modifyFlags(MachineInstr::BranchTarget | MachineInstr::IsBlockStart, 0);
+        }
 
+        // Add initial MI annotations
         setMIFlags(&*MI);
 
         for(auto &pred : MBB.predecessors()){
@@ -91,8 +100,13 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
         auto last = MI;
         for( auto MI = std::next(MBB.instr_begin()); MI != MBB.instr_end(); MI++ ) {
+            // LLVM15 now has isMetaInstruction
+            if (MI->isMetaInstruction())
+               continue;
+
             setMIFlags(&*MI);
 
+#if 0
             //The zero size instructions from RISCVInstrInfo.cpp - getInstSizeInBytes
             //wasn't obvious how to call it, so here's this unmaintable approach
             switch(MI->getOpcode()){
@@ -104,6 +118,7 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
                 default:  //do nothing
                     break;  //breaks the switch not the loop
             }
+#endif
 
             if(last->isCall())
                 MI->setFlag(MachineInstr::ReturnTarget);
@@ -113,6 +128,9 @@ bool RISCVISPMetadata::runOnMachineFunction(MachineFunction &MF) {
 
             last = MI;
         }
+
+        // last instruction should have block end annotation
+        last->setFlag(MachineInstr::IsBlockEnd);
     }
 
   return false;
