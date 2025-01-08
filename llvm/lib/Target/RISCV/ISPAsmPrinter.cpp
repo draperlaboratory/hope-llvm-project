@@ -101,17 +101,17 @@ void ISPAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     EmitFnRangeMetadata(CurrentFnSym, OutContext.createTempSymbol());
   }
   //SSITH - clean up in function epilog
-  if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
-    //Emit our new store
-    MCInst SSITHStore;
-    LowerToSSITHEpilogStore32(MI, SSITHStore, *this);
-    EmitToStreamer(*OutStreamer, SSITHStore);
-  } else if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LD){
-    //Same as above, but for 64-bit load instructions
-    MCInst SSITHStore;
-    LowerToSSITHEpilogStore64(MI, SSITHStore, *this);
-    EmitToStreamer(*OutStreamer, SSITHStore);
-  }
+//   if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LW){
+//     //Emit our new store
+//     MCInst SSITHStore;
+//     LowerToSSITHEpilogStore32(MI, SSITHStore, *this);
+//     EmitToStreamer(*OutStreamer, SSITHStore);
+//   } else if(MI->getFlag(MachineInstr::FnEpilog) && MI->getOpcode() == RISCV::LD){
+//     //Same as above, but for 64-bit load instructions
+//     MCInst SSITHStore;
+//     LowerToSSITHEpilogStore64(MI, SSITHStore, *this);
+//     EmitToStreamer(*OutStreamer, SSITHStore);
+//   }
 
 }
 
